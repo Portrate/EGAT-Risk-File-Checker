@@ -1,7 +1,7 @@
 from pydantic import BaseModel, field_validator
 
 
-# ── Inbound (request) ──────────────────────────────────────────────────────────
+# Inbound (request)
 
 class ChecklistSection(BaseModel):
     title: str
@@ -24,7 +24,7 @@ class ChecklistSection(BaseModel):
         return cleaned
 
 
-# ── Outbound (response) ────────────────────────────────────────────────────────
+# Outbound (response)
 
 class ItemResult(BaseModel):
     requirement: str

@@ -130,3 +130,41 @@
 .btn-icon:hover {
   color: var(--color-error);
 }
+
+/* Sub Item Chips */
+.sub-items-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.sub-item-chip {
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--color-surface-container-high);
+  border: 1px solid var(--color-outline-variant);
+  border-radius: var(--radius-sm);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  color: var(--color-on-surface);
+}
+
+.sub-item-chip:hover {
+  background-color: var(--color-surface-container-highest);
+}
+
+.sub-item-text {
+  margin-right: 0.25rem;
+}
+
+.remove-sub-item {
+  font-size: 1rem;
+  cursor: pointer;
+  color: var(--color-on-surface-variant);
+  transition: color 0.2s;
+}
+
+.remove-sub-item:hover {
+  color: var(--color-error);
+}

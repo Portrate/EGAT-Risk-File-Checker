@@ -1,4 +1,3 @@
-// upload.js
 let selectedFile = null;
 
 function getSelectedFile() {

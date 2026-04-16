@@ -48,10 +48,7 @@ def extract_text_from_bytes(pdf_bytes: bytes) -> str:
 
 
 def extract_pages_from_bytes(pdf_bytes: bytes) -> list[dict]:
-    """Return a list of dicts, one per page: ``{"page": N, "text": ...}``.
-
-    Useful for RAG chunking — each page becomes an independent chunk.
-    """
+    """Return a list of dicts, one per page: ``{"page": N, "text": ...}``."""
     pages: list[dict] = []
     with fitz.open(stream=pdf_bytes, filetype="pdf") as doc:
         for page_num, page in enumerate(doc, start=1):
@@ -63,10 +60,7 @@ def extract_pages_from_bytes(pdf_bytes: bytes) -> list[dict]:
 
 
 def extract_pages_from_path(pdf_path: str | Path) -> list[dict]:
-    """Return a list of dicts, one per page: ``{"page": N, "text": ...}``.
-
-    Useful for indexing reference documents into ChromaDB.
-    """
+    """Return a list of dicts, one per page: ``{"page": N, "text": ...}``."""
     pdf_path = Path(pdf_path)
     if not pdf_path.exists():
         raise FileNotFoundError(f"PDF not found: {pdf_path}")

@@ -1,12 +1,3 @@
-// checklist.js
-
-/**
- * Read the current state of the checklist table and return it as the JSON
- * payload expected by POST /analyze.
- *
- * Each row maps to:  { title: string, items: string[] }
- * Sub-items are comma-separated inside the single "Required Sub-items" cell.
- */
 function getChecklist() {
     const rows = document.querySelectorAll('#checklist-body tr');
     const checklist = [];
@@ -37,7 +28,7 @@ function getChecklist() {
 function initChecklist() {
     const addRowBtn = document.getElementById('add-row-btn');
     const checklistBody = document.getElementById('checklist-body');
-    let rowCount = 3; // 3 rows are pre-filled in the HTML
+    let rowCount = checklistBody.querySelectorAll('tr').length;
 
     if (!addRowBtn || !checklistBody) return;
 
@@ -48,10 +39,10 @@ function initChecklist() {
         tr.innerHTML = `
             <td class="excel-row-index">${rowCount}</td>
             <td class="excel-cell">
-                <textarea rows="1" placeholder="New Category"></textarea>
+                <textarea rows="1" placeholder="หัวข้อหลัก"></textarea>
             </td>
             <td class="excel-cell">
-                <textarea rows="1" placeholder="New Sub-items"></textarea>
+                <textarea rows="1" placeholder="รายการย่อย (คั่นด้วย Comma)"></textarea>
             </td>
             <td class="excel-cell" style="text-align: center;">
                 <button class="btn-icon delete-row-btn">

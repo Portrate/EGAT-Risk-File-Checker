@@ -64,8 +64,14 @@
                                     <td class="excel-cell">
                                         <input type="text" placeholder="หัวข้อหลัก" value="" />
                                     </td>
-                                    <td class="excel-cell">
-                                        <input type="text" placeholder="รายการย่อย (คั่นด้วย Comma)" value="" />
+                                    <td class="excel-cell sub-items-cell">
+                                        <div class="sub-items-container"></div>
+                                        <div class="add-sub-item-wrapper" style="display: flex; gap: 0.25rem; align-items: center; margin-top: 0.25rem;">
+                                            <input type="text" class="sub-item-input" placeholder="พิมพ์แล้วกด + หรือ Enter" style="flex: 1;" />
+                                            <button type="button" class="btn-icon add-sub-item-btn" style="padding: 0.25rem; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px;">
+                                                <span class="material-symbols-outlined" style="font-size: 1.25rem;" data-icon="add">add</span>
+                                            </button>
+                                        </div>
                                     </td>
                                     <td class="excel-cell" style="text-align: center;">
                                         <button class="btn-icon delete-row-btn"><span class="material-symbols-outlined"

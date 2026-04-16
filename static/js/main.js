@@ -1,4 +1,4 @@
-// ── Upload ────────────────────────────────────────────────────────────────────
+// Upload
 let selectedFile = null;
 
 function getSelectedFile() {
@@ -51,7 +51,7 @@ function initUpload() {
     }
 }
 
-// ── Checklist ─────────────────────────────────────────────────────────────────
+// Checklist
 function getChecklist() {
     const rows = document.querySelectorAll('#checklist-body tr');
     const checklist = [];
@@ -60,18 +60,53 @@ function getChecklist() {
         const cells = row.querySelectorAll('td.excel-cell');
         if (cells.length < 2) return;
 
-        const titleEl   = cells[0].querySelector('input, textarea');
-        const itemsEl   = cells[1].querySelector('input, textarea');
-        const title     = titleEl ? titleEl.value.trim() : '';
-        const rawItems  = itemsEl ? itemsEl.value.trim() : '';
+        const titleEl = cells[0].querySelector('input, textarea');
+        const title   = titleEl ? titleEl.value.trim() : '';
 
-        if (!title && !rawItems) return;
+        const itemEls = cells[1].querySelectorAll('.sub-item-text');
+        const items   = Array.from(itemEls).map(el => el.textContent.trim()).filter(Boolean);
 
-        const items = rawItems.split(',').map(s => s.trim()).filter(Boolean);
+        if (!title && items.length === 0) return;
+
         checklist.push({ title, items });
     });
 
     return checklist;
+}
+
+function bindSubItemEvents(row) {
+    const input = row.querySelector('.sub-item-input');
+    const btn = row.querySelector('.add-sub-item-btn');
+    const container = row.querySelector('.sub-items-container');
+
+    if (!input || !btn || !container) return;
+
+    function addSubItem() {
+        const val = input.value.trim();
+        if (!val) return;
+
+        const chip = document.createElement('div');
+        chip.className = 'sub-item-chip';
+        chip.innerHTML = `
+            <span class="sub-item-text">${val}</span>
+            <span class="material-symbols-outlined remove-sub-item">close</span>
+        `;
+        
+        chip.querySelector('.remove-sub-item').addEventListener('click', () => {
+            chip.remove();
+        });
+
+        container.appendChild(chip);
+        input.value = '';
+    }
+
+    btn.addEventListener('click', addSubItem);
+    input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addSubItem();
+        }
+    });
 }
 
 function initChecklist() {
@@ -82,19 +117,30 @@ function initChecklist() {
 
     let rowCount = checklistBody.querySelectorAll('tr').length;
 
+    checklistBody.querySelectorAll('tr').forEach(bindSubItemEvents);
+
     addRowBtn.addEventListener('click', () => {
         rowCount++;
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td class="excel-row-index">${rowCount}</td>
-            <td class="excel-cell"><input type="text" placeholder="Category" value="" /></td>
-            <td class="excel-cell"><input type="text" placeholder="Required Sub-items (comma separated)" value="" /></td>
+            <td class="excel-cell"><input type="text" placeholder="หัวข้อหลัก" value="" /></td>
+            <td class="excel-cell sub-items-cell">
+                <div class="sub-items-container"></div>
+                <div class="add-sub-item-wrapper" style="display: flex; gap: 0.25rem; align-items: center; margin-top: 0.25rem;">
+                    <input type="text" class="sub-item-input" placeholder="พิมพ์แล้วกด + หรือ Enter" style="flex: 1;" />
+                    <button type="button" class="btn-icon add-sub-item-btn" style="padding: 0.25rem; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px;">
+                        <span class="material-symbols-outlined" style="font-size: 1.25rem;">add</span>
+                    </button>
+                </div>
+            </td>
             <td class="excel-cell" style="text-align:center;">
                 <button class="btn-icon delete-row-btn">
                     <span class="material-symbols-outlined">delete</span>
                 </button>
             </td>`;
         checklistBody.appendChild(tr);
+        bindSubItemEvents(tr);
 
         tr.querySelector('.delete-row-btn').addEventListener('click', () => {
             tr.remove();
@@ -126,7 +172,7 @@ function initChecklist() {
     }
 }
 
-// ── Verification ──────────────────────────────────────────────────────────────
+// Verification
 function setLoading(on) {
     const btn = document.getElementById('verify-btn');
     if (!btn) return;
@@ -202,7 +248,7 @@ async function runVerification() {
     }
 }
 
-// ── Init ──────────────────────────────────────────────────────────────────────
+// Init
 initUpload();
 initChecklist();
 document.getElementById('verify-btn').addEventListener('click', runVerification);
