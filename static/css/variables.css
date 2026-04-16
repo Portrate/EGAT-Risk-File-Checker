@@ -1,0 +1,92 @@
+:root {
+  /* Primary */
+  --color-primary: #0056d2;
+  --color-primary-dim: #004bb9;
+  --color-primary-container: #dae2ff;
+  --color-primary-fixed: #dae2ff;
+  --color-primary-fixed-dim: #c6d3ff;
+  --color-on-primary: #f8f7ff;
+  --color-on-primary-container: #004ab7;
+  --color-on-primary-fixed: #003991;
+  --color-on-primary-fixed-variant: #0053cc;
+
+  /* Secondary */
+  --color-secondary: #526074;
+  --color-secondary-dim: #465468;
+  --color-secondary-container: #d5e3fc;
+  --color-secondary-fixed: #d5e3fc;
+  --color-secondary-fixed-dim: #c7d5ed;
+  --color-on-secondary: #f8f8ff;
+  --color-on-secondary-container: #455367;
+  --color-on-secondary-fixed: #324053;
+  --color-on-secondary-fixed-variant: #4e5c71;
+
+  /* Tertiary */
+  --color-tertiary: #615b77;
+  --color-tertiary-dim: #55506b;
+  --color-tertiary-container: #e3dbfd;
+  --color-tertiary-fixed: #e3dbfd;
+  --color-tertiary-fixed-dim: #d5cdee;
+  --color-on-tertiary: #fcf7ff;
+  --color-on-tertiary-container: #524c68;
+  --color-on-tertiary-fixed: #3f3a54;
+  --color-on-tertiary-fixed-variant: #5b5672;
+
+  /* Backgrounds & Surfaces */
+  --color-background: #f7f9fb;
+  --color-on-background: #2a3439;
+  --color-surface: #f7f9fb;
+  --color-surface-bright: #f7f9fb;
+  --color-surface-dim: #cfdce3;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f0f4f7;
+  --color-surface-container: #e8eff3;
+  --color-surface-container-high: #e1e9ee;
+  --color-surface-container-highest: #d9e4ea;
+  --color-surface-variant: #d9e4ea;
+  --color-surface-tint: #0056d2;
+  --color-on-surface: #2a3439;
+  --color-on-surface-variant: #566166;
+  --color-inverse-surface: #0b0f10;
+  --color-inverse-on-surface: #9a9d9f;
+  --color-inverse-primary: #5b8cff;
+
+  /* Errors */
+  --color-error: #9f403d;
+  --color-error-dim: #4e0309;
+  --color-error-container: #fe8983;
+  --color-on-error: #fff7f6;
+  --color-on-error-container: #752121;
+
+  /* Outline */
+  --color-outline: #717c82;
+  --color-outline-variant: #a9b4b9;
+
+  /* Typography */
+  --font-display: 'Manrope', sans-serif;
+  --font-headline: 'Manrope', sans-serif;
+  --font-title: 'Inter', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-label: 'Inter', sans-serif;
+
+  /* Spacing */
+  --spacing-1: 0.25rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-6: 1.5rem;
+  --spacing-8: 2rem;
+  --spacing-12: 3rem;
+
+  /* Borders / Radii */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-ambient: 0 12px 32px -4px rgba(42, 52, 57, 0.08); /* 0.08 alpha of on-surface */
+  --shadow-input-hover: 0 2px 4px rgba(42, 52, 57, 0.04);
+}

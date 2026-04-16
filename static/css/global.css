@@ -1,0 +1,136 @@
+@import "./variables.css";
+
+/* CSS Reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body, h1, h2, h3, h4, p, figure, blockquote, dl, dd {
+  margin: 0;
+}
+
+ul[role="list"], ol[role="list"] {
+  list-style: none;
+  padding: 0;
+}
+
+html:focus-within {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  text-rendering: optimizeSpeed;
+  line-height: 1.5;
+  background-color: var(--color-surface);
+  color: var(--color-on-surface);
+  font-family: var(--font-body);
+  display: flex;
+  flex-direction: column;
+}
+
+a:not([class]) {
+  text-decoration-skip-ink: auto;
+}
+
+img, picture {
+  max-width: 100%;
+  display: block;
+}
+
+input, button, textarea, select {
+  font: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:focus-within {
+    scroll-behavior: auto;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Typography Scale */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-headline);
+  font-weight: 800; /* Extrabold from the original tailwind */
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  font-size: 1.875rem; /* 3xl */
+  line-height: 2.25rem;
+}
+
+h3 {
+  font-size: 1.125rem; /* lg */
+  line-height: 1.75rem;
+  font-weight: 700;
+}
+
+h4 {
+  font-size: 1.5rem; /* 2xl */
+}
+
+/* Utilities */
+.text-primary { color: var(--color-primary); }
+.text-error { color: var(--color-error); }
+.text-on-surface { color: var(--color-on-surface); }
+.text-on-surface-variant { color: var(--color-on-surface-variant); }
+.text-outline { color: var(--color-outline); }
+
+.bg-surface { background-color: var(--color-surface); }
+.bg-surface-container { background-color: var(--color-surface-container); }
+.bg-surface-container-low { background-color: var(--color-surface-container-low); }
+.bg-surface-container-lowest { background-color: var(--color-surface-container-lowest); }
+
+/* Layout Shell */
+.app-container {
+  flex: 1;
+  padding: var(--spacing-8);
+  overflow-y: auto;
+}
+
+.max-w-6xl {
+  max-width: 72rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.header-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-8);
+}
+
+.grid-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-8);
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .grid-layout {
+    grid-template-columns: 3fr 2fr;
+  }
+}
+
+.text-md {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+
+
+/* Base button */
+button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}

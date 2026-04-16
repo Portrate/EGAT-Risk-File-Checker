@@ -1,0 +1,132 @@
+/* checklist.css */
+
+.checklist-card {
+  background-color: var(--color-surface-container-lowest);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 12px 32px -4px rgba(42, 52, 57, 0.06);
+  overflow: hidden;
+}
+
+.checklist-header {
+  padding: var(--spacing-6);
+  border-bottom: 1px solid var(--color-surface-container);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+.add-row-btn {
+  color: var(--color-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  transition: opacity 0.2s ease;
+}
+
+.add-row-btn:hover {
+  text-decoration: underline;
+  opacity: 0.8;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.excel-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* The no-divider rule from design system applied internally, but table cells might have ghost borders */
+.excel-table th {
+  background-color: var(--color-surface-container-low);
+  padding: var(--spacing-2) var(--spacing-4);
+  border-right: 1px solid var(--color-outline-variant);
+  font-family: var(--font-headline);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-on-surface-variant);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: left;
+}
+
+.excel-row-index {
+  background-color: var(--color-surface-container-low);
+  width: 40px;
+  text-align: center;
+  color: var(--color-on-surface-variant);
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-right: 1px solid var(--color-outline-variant);
+  /* "Ghost Border" logic */
+}
+
+/* Row Styling */
+.excel-table tbody tr {
+  background-color: transparent;
+  /* Rely on surface-container-lowest */
+  border-bottom: 1px solid rgba(169, 180, 185, 0.15);
+  /* Ghost border fallback */
+}
+
+.excel-cell {
+  padding: var(--spacing-2) var(--spacing-4);
+  /* no right border inside body to keep it clean */
+}
+
+/* Input Fields & Modern Forms */
+.excel-cell input,
+.excel-cell textarea {
+  width: 100%;
+  background-color: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: var(--spacing-1) 0;
+  font-size: 0.875rem;
+  color: var(--color-on-surface);
+  transition: all 0.2s ease;
+  resize: none;
+  overflow: hidden;
+  min-height: 1.75rem;
+}
+
+.excel-cell input:focus,
+.excel-cell textarea:focus {
+  outline: none;
+  border-bottom: 2px solid var(--color-primary);
+  background-color: var(--color-primary-container);
+}
+
+/* Chips & Status Indicators */
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.625rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-chip.critical {
+  background-color: var(--color-error-container);
+  color: var(--color-on-error-container);
+}
+
+.status-chip.standard {
+  background-color: var(--color-secondary-container);
+  color: var(--color-on-secondary-container);
+}
+
+.btn-icon {
+  color: var(--color-outline);
+  transition: color 0.2s;
+  padding: var(--spacing-2);
+}
+
+.btn-icon:hover {
+  color: var(--color-error);
+}

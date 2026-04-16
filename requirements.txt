@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+python-multipart
+jinja2
+aiofiles
+pymupdf
+chromadb
+httpx
+pydantic
