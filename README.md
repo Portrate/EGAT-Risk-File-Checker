@@ -8,8 +8,8 @@
 ## ความต้องการของระบบ
 
 - Windows 10 / 11
-- RAM อย่างน้อย **16 GB** (แนะนำ 32 GB ขึ้นไป)
-- พื้นที่ว่างอย่างน้อย **20 GB** (สำหรับโมเดล AI)
+- RAM อย่างน้อย **8 GB** (แนะนำ 16 GB ขึ้นไป)
+- พื้นที่ว่างอย่างน้อย **10 GB** (สำหรับโมเดล AI)
 
 ---
 
@@ -33,13 +33,13 @@ Ollama คือโปรแกรมที่ใช้รัน AI บนเค
 
 ### วิธีที่ 1 ดาวน์โหลด EXE (แนะนำ)
 
-1. ไปที่หน้า **[Releases](https://github.com/Portrate/EGAT-Risk-File-Checker/releases/tag/Non-Production-Release)** ของ GitHub
+1. ไปที่หน้า **[Releases](https://github.com/Portrate/EGAT-Risk-File-Checker/releases/)** ของ GitHub
 2. ดาวน์โหลดไฟล์ **`RiskFileChecker.exe`** จาก Assets
 3. เปิดไฟล์ `RiskFileChecker.exe`
 4. ถ้า Windows แจ้งเตือน **"Windows protected your PC"** → คลิก **"More info"** → **"Run anyway"**
 5. โปรแกรมจะตรวจสอบ Ollama และดาวน์โหลดโมเดล AI โดยอัตโนมัติ และเปิดเบราว์เซอร์ให้เอง
 
-> **หมายเหตุ:** การเปิดครั้งแรกอาจใช้เวลา 15–20 นาที เพื่อดาวน์โหลดโมเดล Gemma 4
+> **หมายเหตุ:** การเปิดครั้งแรกอาจใช้เวลา 5–15 นาที เพื่อดาวน์โหลดโมเดล Gemma 4 (ขนาดประมาณ 9 GB)
 > ครั้งต่อไปจะใช้เวลาเปิดเร็ว
 
 ---

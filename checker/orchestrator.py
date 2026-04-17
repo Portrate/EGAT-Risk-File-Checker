@@ -5,20 +5,18 @@ import httpx
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 MODEL = "gemma4:26b"
+OLLAMA_TIMEOUT = httpx.Timeout(connect=30.0, read=1200.0, write=60.0, pool=10.0)
+OLLAMA_OPTIONS = {"num_ctx": 32768, "num_predict": 512, "temperature": 0}
 
 CHUNK_SIZE = 24_000      # characters per chunk sent to LLM
 CHUNK_OVERLAP = 2_000   # overlap between consecutive chunks to avoid missing content at boundaries
 
-_SINGLE_ITEM_SCHEMA = {
-    "type": "object",
-    "required": ["status", "reasoning_in_thai", "evidence", "found_in_document"],
-    "properties": {
-        "status": {"type": "string", "enum": ["pass", "fail"]},
-        "reasoning_in_thai": {"type": "string", "description": "อธิบายเหตุผลเป็นภาษาไทยเท่านั้น"},
-        "evidence": {"type": ["string", "null"], "description": "คัดลอกข้อความจากเอกสารโดยตรง (แก้ไขคำผิดด้วย) ไม่แต่งเอง หากไม่พบต้องเป็น null"},
-        "found_in_document": {"type": "boolean", "description": "true เมื่อพบเนื้อหาที่เกี่ยวข้องกับข้อกำหนด"},
-    },
-}
+_JSON_FORMAT_EXAMPLE = """{
+  "status": "pass หรือ fail",
+  "reasoning_in_thai": "1-2 ประโยคสั้นๆ เป็นภาษาไทยเท่านั้น",
+  "evidence": "ข้อความที่คัดลอกจากเอกสาร ไม่เกิน 80 ตัวอักษร หรือ null ถ้าไม่พบ",
+  "found_in_document": true
+}"""
 
 
 def _build_single_prompt(document_text: str, section_title: str, requirement: str) -> str:
@@ -37,6 +35,11 @@ def _build_single_prompt(document_text: str, section_title: str, requirement: st
 3. ตอบ "fail" เฉพาะเมื่อเอกสารไม่มีเนื้อหาที่เกี่ยวข้องกับข้อกำหนดนี้จริงๆ ไม่ใช่เพราะใช้คำต่างกัน
 4. found_in_document = true เมื่อพบเนื้อหาที่เกี่ยวข้อง แม้จะใช้ภาษาต่างกัน
 5. ห้ามใช้ภาษาอังกฤษในการอธิบาย (reasoning_in_thai) ต้องตอบเป็นภาษาไทยเท่านั้น
+6. reasoning_in_thai ต้องสั้น 1-2 ประโยคเท่านั้น ห้ามอธิบายยาว
+7. evidence ต้องสั้น ไม่เกิน 80 ตัวอักษร
+
+ตอบเป็น JSON เท่านั้น ตามรูปแบบนี้:
+{_JSON_FORMAT_EXAMPLE}
 
 DOCUMENT:
 {document_text}"""
@@ -87,11 +90,15 @@ async def _check_chunk(
             "system": "คุณตอบเป็นภาษาไทยเท่านั้น ห้ามใช้ภาษาอังกฤษในคำอธิบาย",
             "prompt": prompt,
             "stream": False,
-            "format": _SINGLE_ITEM_SCHEMA,
+            "format": "json",
+            "options": OLLAMA_OPTIONS,
         },
+        timeout=OLLAMA_TIMEOUT,
     )
     response.raise_for_status()
-    llm_text = response.json().get("response", "")
+    raw = response.json()
+    llm_text = raw.get("response", "")
+    print(f"[DEBUG] done_reason={raw.get('done_reason')} ctx_used={raw.get('prompt_eval_count')} gen_tokens={raw.get('eval_count')} raw_response={repr(llm_text[:120])}")
     result = _extract_json(llm_text)
     if "reasoning_in_thai" in result:
         result["reasoning"] = result.pop("reasoning_in_thai")
@@ -112,8 +119,10 @@ async def _check_chunk(
                 "system": "ห้ามตอบเป็นภาษาอังกฤษ ตอบเป็นภาษาไทยเท่านั้น",
                 "prompt": retry_prompt,
                 "stream": False,
-                "format": _SINGLE_ITEM_SCHEMA,
+                "format": "json",
+                "options": OLLAMA_OPTIONS,
             },
+            timeout=OLLAMA_TIMEOUT,
         )
         retry_response.raise_for_status()
         retry_text = retry_response.json().get("response", "")
@@ -145,7 +154,7 @@ async def _check_single_item(
                 return result
         return best
     except Exception as e:
-        print(f"[ERROR] Failed checking '{requirement[:40]}': {e}")
+        print(f"[ERROR] Failed checking '{requirement[:40]}': {type(e).__name__}: {e}")
         return {"status": "fail", "reasoning": f"เกิดข้อผิดพลาด: {e}", "evidence": None}
 
 
@@ -154,7 +163,7 @@ async def analyze_with_llm(document_text: str, checklist: list[dict]) -> dict:
     print(f"[DEBUG] Checklist received: {json.dumps(checklist, ensure_ascii=False)}")
 
     results = []
-    async with httpx.AsyncClient(timeout=120) as client:
+    async with httpx.AsyncClient() as client:
         for section in checklist:
             section_title = section.get("title", "")
             items_out = []
