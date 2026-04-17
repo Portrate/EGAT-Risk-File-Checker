@@ -6,26 +6,22 @@ import httpx
 OLLAMA_URL = "http://localhost:11434/api/generate"
 MODEL = "gemma4:e4b"
 
-MAX_DOC_CHARS = 24_000
+CHUNK_SIZE = 24_000      # characters per chunk sent to LLM
+CHUNK_OVERLAP = 2_000   # overlap between consecutive chunks to avoid missing content at boundaries
 
 _SINGLE_ITEM_SCHEMA = {
     "type": "object",
-    "required": ["status", "reasoning_in_thai", "evidence"],
+    "required": ["status", "reasoning_in_thai", "evidence", "found_in_document"],
     "properties": {
         "status": {"type": "string", "enum": ["pass", "partial", "fail"]},
         "reasoning_in_thai": {"type": "string", "description": "อธิบายเหตุผลเป็นภาษาไทยเท่านั้น"},
-        "evidence": {"type": ["string", "null"]},
+        "evidence": {"type": ["string", "null"], "description": "คัดลอกข้อความจากเอกสารโดยตรง ไม่แต่งเอง หากไม่พบต้องเป็น null"},
+        "found_in_document": {"type": "boolean", "description": "true เฉพาะเมื่อพบข้อความที่ตรงกันโดยตรงในเอกสาร ห้ามอนุมานหรือสรุปเอง"},
     },
 }
 
 
 def _build_single_prompt(document_text: str, section_title: str, requirement: str) -> str:
-    if len(document_text) > MAX_DOC_CHARS:
-        document_text = (
-            document_text[:MAX_DOC_CHARS]
-            + "\n\n[เอกสารถูกตัดทอนเนื่องจากความยาวเกินกำหนด]"
-        )
-
     return f"""คุณคือระบบตรวจสอบเอกสาร กรุณาตรวจสอบว่าเอกสารด้านล่างมีเนื้อหาตรงกับข้อกำหนดที่ระบุหรือไม่
 
 หัวข้อ: {section_title}
@@ -49,6 +45,21 @@ DOCUMENT:
 {document_text}"""
 
 
+def _split_chunks(text: str) -> list[str]:
+    """Split document text into overlapping chunks of CHUNK_SIZE characters."""
+    if len(text) <= CHUNK_SIZE:
+        return [text]
+    chunks = []
+    start = 0
+    while start < len(text):
+        end = start + CHUNK_SIZE
+        chunks.append(text[start:end])
+        if end >= len(text):
+            break
+        start = end - CHUNK_OVERLAP
+    return chunks
+
+
 def _extract_json(text: str) -> dict:
     text = text.strip()
     fenced = re.search(r"```(?:json)?\s*([\s\S]+?)\s*```", text)
@@ -57,35 +68,87 @@ def _extract_json(text: str) -> dict:
     return json.loads(text)
 
 
+def _is_thai(text: str) -> bool:
+    """Return True if text contains a meaningful amount of Thai characters."""
+    if not text:
+        return True  # empty is fine, no retry needed
+    thai_chars = sum(1 for c in text if "\u0e00" <= c <= "\u0e7f")
+    return thai_chars / len(text) >= 0.15  # at least 15% Thai script
+
+
+async def _check_chunk(
+    client: httpx.AsyncClient,
+    chunk: str,
+    section_title: str,
+    requirement: str,
+) -> dict:
+    prompt = _build_single_prompt(chunk, section_title, requirement)
+    response = await client.post(
+        OLLAMA_URL,
+        json={
+            "model": MODEL,
+            "system": "คุณตอบเป็นภาษาไทยเท่านั้น ห้ามใช้ภาษาอังกฤษในคำอธิบาย",
+            "prompt": prompt,
+            "stream": False,
+            "format": _SINGLE_ITEM_SCHEMA,
+        },
+    )
+    response.raise_for_status()
+    llm_text = response.json().get("response", "")
+    result = _extract_json(llm_text)
+    if "reasoning_in_thai" in result:
+        result["reasoning"] = result.pop("reasoning_in_thai")
+    elif "reasoning" not in result:
+        result["reasoning"] = ""
+
+    # If reasoning came back in English, retry once with a stronger instruction
+    if not _is_thai(result.get("reasoning", "")):
+        print(f"[WARN] Reasoning not in Thai, retrying with stronger instruction...")
+        retry_prompt = (
+            "!!!สำคัญมาก: ตอบเป็นภาษาไทยเท่านั้น ห้ามใช้ภาษาอังกฤษโดยเด็ดขาด!!!\n\n"
+            + prompt
+        )
+        retry_response = await client.post(
+            OLLAMA_URL,
+            json={
+                "model": MODEL,
+                "system": "ห้ามตอบเป็นภาษาอังกฤษ ตอบเป็นภาษาไทยเท่านั้น",
+                "prompt": retry_prompt,
+                "stream": False,
+                "format": _SINGLE_ITEM_SCHEMA,
+            },
+        )
+        retry_response.raise_for_status()
+        retry_text = retry_response.json().get("response", "")
+        retry_result = _extract_json(retry_text)
+        if "reasoning_in_thai" in retry_result:
+            retry_result["reasoning"] = retry_result.pop("reasoning_in_thai")
+        elif "reasoning" not in retry_result:
+            retry_result["reasoning"] = ""
+        if _is_thai(retry_result.get("reasoning", "")):
+            result = retry_result
+
+    return result
+
+
 async def _check_single_item(
     client: httpx.AsyncClient,
     document_text: str,
     section_title: str,
     requirement: str,
 ) -> dict:
-    prompt = _build_single_prompt(document_text, section_title, requirement)
+    chunks = _split_chunks(document_text)
+    best = {"status": "fail", "reasoning": "", "evidence": None}
     try:
-        response = await client.post(
-            OLLAMA_URL,
-            json={
-                "model": MODEL,
-                "system": "คุณตอบเป็นภาษาไทยเท่านั้น ห้ามใช้ภาษาอังกฤษในคำอธิบาย",
-                "prompt": prompt,
-                "stream": False,
-                "format": _SINGLE_ITEM_SCHEMA,
-            },
-        )
-        response.raise_for_status()
-        llm_text = response.json().get("response", "")
-        result = _extract_json(llm_text)
-        
-        if "reasoning_in_thai" in result:
-            result["reasoning"] = result.pop("reasoning_in_thai")
-        elif "reasoning" not in result:
-            result["reasoning"] = ""
-            
-        print(f"[DEBUG] '{requirement[:40]}' → {result.get('status')}")
-        return result
+        for i, chunk in enumerate(chunks):
+            result = await _check_chunk(client, chunk, section_title, requirement)
+            status = result.get("status", "fail")
+            print(f"[DEBUG] '{requirement[:40]}' chunk {i+1}/{len(chunks)} → {status}")
+            if status == "pass":
+                return result
+            if status == "partial" and best["status"] == "fail":
+                best = result
+        return best
     except Exception as e:
         print(f"[ERROR] Failed checking '{requirement[:40]}': {e}")
         return {"status": "fail", "reasoning": f"เกิดข้อผิดพลาด: {e}", "evidence": None}
