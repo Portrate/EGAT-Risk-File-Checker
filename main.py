@@ -1,4 +1,6 @@
 import json
+import os
+import sys
 
 import httpx
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
@@ -10,10 +12,13 @@ from checker.models import ChecklistSection
 from checker.orchestrator import MODEL, analyze_with_llm
 from checker.pdf_extractor import extract_text_from_bytes
 
+# When frozen by PyInstaller, files are extracted to sys._MEIPASS
+BASE_DIR = sys._MEIPASS if getattr(sys, "frozen", False) else os.path.dirname(os.path.abspath(__file__))
+
 app = FastAPI()
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
 
 @app.get("/")
