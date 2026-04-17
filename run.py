@@ -71,7 +71,7 @@ def ensure_model(model_name: str) -> bool:
         pass
 
     print(f"  กำลังดาวน์โหลดโมเดล {model_name}...")
-    print(f"  (ครั้งแรกอาจใช้เวลา 5-15 นาที ขนาดประมาณ 9 GB)")
+    print(f"  (ครั้งแรกอาจใช้เวลานาน โปรดรอ...)")
     print()
     try:
         subprocess.run(["ollama", "pull", model_name], timeout=1800)
@@ -116,7 +116,7 @@ def main():
 
     print()
     print("[3/3] ตรวจสอบโมเดล AI...")
-    if not ensure_model("gemma4:e4b"):
+    if not ensure_model("gemma4:26b"):
         print()
         print("  [ERROR] ไม่สามารถเตรียมโมเดลได้")
         print()

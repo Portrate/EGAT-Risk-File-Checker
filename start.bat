@@ -37,10 +37,10 @@ pip install -r requirements.txt --quiet
 
 REM --- Pull model if needed ---
 echo [3/3] Checking Ollama model...
-ollama list | findstr "gemma4:e4b" >nul 2>&1
+ollama list | findstr "gemma4:26b" >nul 2>&1
 if errorlevel 1 (
-    echo Pulling gemma4:e4b model (this may take a while on first run)...
-    ollama pull gemma4:e4b
+    echo Pulling gemma4:26b model (this may take a while on first run)...
+    ollama pull gemma4:26b
 )
 
 REM --- Start ---

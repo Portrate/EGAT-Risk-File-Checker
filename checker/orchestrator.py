@@ -4,7 +4,7 @@ import re
 import httpx
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL = "gemma4:e4b"
+MODEL = "gemma4:26b"
 
 CHUNK_SIZE = 24_000      # characters per chunk sent to LLM
 CHUNK_OVERLAP = 2_000   # overlap between consecutive chunks to avoid missing content at boundaries
