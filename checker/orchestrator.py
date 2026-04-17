@@ -98,17 +98,6 @@ async def _check_chunk(
     elif "reasoning" not in result:
         result["reasoning"] = ""
 
-    # Enforce: pass without found_in_document=True or without evidence → downgrade to fail
-    status = result.get("status", "fail")
-    found = result.get("found_in_document", False)
-    evidence = result.get("evidence")
-    if status == "pass" and (not found or not evidence):
-        print(f"[WARN] Downgrading '{status}' to 'fail' — found_in_document={found}, evidence={evidence!r}")
-        result["status"] = "fail"
-        result["evidence"] = None
-        if not result.get("reasoning"):
-            result["reasoning"] = "ไม่พบหลักฐานที่ชัดเจนในเอกสาร"
-
     # If reasoning came back in English, retry once with a stronger instruction
     if not _is_thai(result.get("reasoning", "")):
         print(f"[WARN] Reasoning not in Thai, retrying with stronger instruction...")
@@ -135,17 +124,6 @@ async def _check_chunk(
             retry_result["reasoning"] = ""
         if _is_thai(retry_result.get("reasoning", "")):
             result = retry_result
-
-    # Re-enforce evidence/found_in_document check after potential retry replacement
-    status = result.get("status", "fail")
-    found = result.get("found_in_document", False)
-    evidence = result.get("evidence")
-    if status == "pass" and (not found or not evidence):
-        print(f"[WARN] Post-retry downgrade '{status}' to 'fail' — found_in_document={found}, evidence={evidence!r}")
-        result["status"] = "fail"
-        result["evidence"] = None
-        if not result.get("reasoning"):
-            result["reasoning"] = "ไม่พบหลักฐานที่ชัดเจนในเอกสาร"
 
     return result
 

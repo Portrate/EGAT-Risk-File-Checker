@@ -46,7 +46,7 @@ function initUpload() {
     function setFile(file) {
         selectedFile = file;
         if (uploadDesc) {
-            uploadDesc.innerHTML = `<span class="text-primary" style="font-weight:700;">${file.name}</span> ready for verification.`;
+            uploadDesc.innerHTML = `<span class="text-primary" style="font-weight:700;">${file.name}</span> พร้อมสำหรับการตรวจสอบ`;
         }
     }
 }
