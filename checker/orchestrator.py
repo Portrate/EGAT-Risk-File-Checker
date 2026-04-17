@@ -13,33 +13,30 @@ _SINGLE_ITEM_SCHEMA = {
     "type": "object",
     "required": ["status", "reasoning_in_thai", "evidence", "found_in_document"],
     "properties": {
-        "status": {"type": "string", "enum": ["pass", "partial", "fail"]},
+        "status": {"type": "string", "enum": ["pass", "fail"]},
         "reasoning_in_thai": {"type": "string", "description": "อธิบายเหตุผลเป็นภาษาไทยเท่านั้น"},
-        "evidence": {"type": ["string", "null"], "description": "คัดลอกข้อความจากเอกสารโดยตรง ไม่แต่งเอง หากไม่พบต้องเป็น null"},
-        "found_in_document": {"type": "boolean", "description": "true เฉพาะเมื่อพบข้อความที่ตรงกันโดยตรงในเอกสาร ห้ามอนุมานหรือสรุปเอง"},
+        "evidence": {"type": ["string", "null"], "description": "คัดลอกข้อความจากเอกสารโดยตรง (แก้ไขคำผิดด้วย) ไม่แต่งเอง หากไม่พบต้องเป็น null"},
+        "found_in_document": {"type": "boolean", "description": "true เมื่อพบเนื้อหาที่เกี่ยวข้องกับข้อกำหนด"},
     },
 }
 
 
 def _build_single_prompt(document_text: str, section_title: str, requirement: str) -> str:
-    return f"""คุณคือระบบตรวจสอบเอกสาร กรุณาตรวจสอบว่าเอกสารด้านล่างมีเนื้อหาตรงกับข้อกำหนดที่ระบุหรือไม่
+    return f"""คุณคือระบบตรวจสอบเอกสาร หน้าที่ของคุณคือตรวจสอบว่าเอกสารมีเนื้อหาครอบคลุมข้อกำหนดที่ระบุหรือไม่
 
 หัวข้อ: {section_title}
 ข้อกำหนด: {requirement}
 
-ตอบเป็นภาษาไทยเท่านั้น โดยใช้รูปแบบ JSON ดังนี้:
-{{
-  "status": "pass" | "partial" | "fail",
-  "reasoning_in_thai": "<อธิบายเหตุผล 1-2 ประโยค เป็นภาษาไทยเท่านั้น ห้ามใช้ภาษาอังกฤษ>",
-  "evidence": "<ข้อความอ้างอิงจากเอกสารไม่เกิน 100 ตัวอักษร หรือ null>"
-}}
+เกณฑ์การตัดสิน:
+- "pass" = เอกสารมีเนื้อหาที่เกี่ยวข้องกับข้อกำหนดนี้ ไม่ว่าจะใช้คำพูดเดียวกันหรือความหมายใกล้เคียงก็ได้ ใช้การดูข้อมูลจากทั้งเอกสาร ไม่ใช่แค่การเปรียบเทียบคำ ต้องระบุ evidence เป็นข้อความจากเอกสาร
+- "fail" = เอกสารไม่มีเนื้อหาที่เกี่ยวข้องกับข้อกำหนดนี้เลย หรือเนื้อหาไม่เกี่ยวข้องกับการไฟฟ้าฝ่ายผลิตแห่งประเทศไทย evidence ต้องเป็น null
 
-กฎ:
-- "pass"    = พบเนื้อหาที่ตรงกับข้อกำหนดอย่างชัดเจน
-- "partial" = พบเนื้อหาที่เกี่ยวข้องบางส่วน
-- "fail"    = ไม่พบเนื้อหาที่ตรงกับข้อกำหนด
-- "evidence" ต้องเป็น null เมื่อ status เป็น "fail"
-- ห้ามใช้ภาษาอังกฤษในการอธิบาย (reasoning_in_thai) เด็ดขาด ต้องตอบเป็นภาษาไทย
+หลักการ:
+1. ยอมรับการใช้คำที่มีความหมายเดียวกันหรือใกล้เคียง เช่น "ความเสี่ยง" กับ "risk", "แผนรับมือ" กับ "มาตรการ"
+2. evidence ต้องเป็นข้อความที่คัดลอกมาจากเอกสารโดยตรง ห้ามแต่งขึ้นเอง
+3. ตอบ "fail" เฉพาะเมื่อเอกสารไม่มีเนื้อหาที่เกี่ยวข้องกับข้อกำหนดนี้จริงๆ ไม่ใช่เพราะใช้คำต่างกัน
+4. found_in_document = true เมื่อพบเนื้อหาที่เกี่ยวข้อง แม้จะใช้ภาษาต่างกัน
+5. ห้ามใช้ภาษาอังกฤษในการอธิบาย (reasoning_in_thai) ต้องตอบเป็นภาษาไทยเท่านั้น
 
 DOCUMENT:
 {document_text}"""
@@ -101,6 +98,17 @@ async def _check_chunk(
     elif "reasoning" not in result:
         result["reasoning"] = ""
 
+    # Enforce: pass without found_in_document=True or without evidence → downgrade to fail
+    status = result.get("status", "fail")
+    found = result.get("found_in_document", False)
+    evidence = result.get("evidence")
+    if status == "pass" and (not found or not evidence):
+        print(f"[WARN] Downgrading '{status}' to 'fail' — found_in_document={found}, evidence={evidence!r}")
+        result["status"] = "fail"
+        result["evidence"] = None
+        if not result.get("reasoning"):
+            result["reasoning"] = "ไม่พบหลักฐานที่ชัดเจนในเอกสาร"
+
     # If reasoning came back in English, retry once with a stronger instruction
     if not _is_thai(result.get("reasoning", "")):
         print(f"[WARN] Reasoning not in Thai, retrying with stronger instruction...")
@@ -128,6 +136,17 @@ async def _check_chunk(
         if _is_thai(retry_result.get("reasoning", "")):
             result = retry_result
 
+    # Re-enforce evidence/found_in_document check after potential retry replacement
+    status = result.get("status", "fail")
+    found = result.get("found_in_document", False)
+    evidence = result.get("evidence")
+    if status == "pass" and (not found or not evidence):
+        print(f"[WARN] Post-retry downgrade '{status}' to 'fail' — found_in_document={found}, evidence={evidence!r}")
+        result["status"] = "fail"
+        result["evidence"] = None
+        if not result.get("reasoning"):
+            result["reasoning"] = "ไม่พบหลักฐานที่ชัดเจนในเอกสาร"
+
     return result
 
 
@@ -146,8 +165,6 @@ async def _check_single_item(
             print(f"[DEBUG] '{requirement[:40]}' chunk {i+1}/{len(chunks)} → {status}")
             if status == "pass":
                 return result
-            if status == "partial" and best["status"] == "fail":
-                best = result
         return best
     except Exception as e:
         print(f"[ERROR] Failed checking '{requirement[:40]}': {e}")

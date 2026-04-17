@@ -60,7 +60,7 @@ async def analyze(
     for section in results:
         for item in section.get("items", []):
             total += 1
-            if item.get("status") in ("pass", "partial"):
+            if item.get("status") == "pass":
                 passed += 1
 
     score = round(passed / total * 100) if total > 0 else 0

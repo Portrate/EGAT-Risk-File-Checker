@@ -28,7 +28,7 @@ class ChecklistSection(BaseModel):
 
 class ItemResult(BaseModel):
     requirement: str
-    status: str  # "pass" | "fail" | "partial"
+    status: str  # "pass" | "fail"
     reasoning: str
     evidence: str | None = None
 
