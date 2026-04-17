@@ -63,6 +63,24 @@ function getChecklist() {
         const titleEl = cells[0].querySelector('input, textarea');
         const title   = titleEl ? titleEl.value.trim() : '';
 
+        // Auto-commit any text still sitting in the input field
+        const pendingInput = cells[1].querySelector('.sub-item-input');
+        if (pendingInput && pendingInput.value.trim()) {
+            const container = cells[1].querySelector('.sub-items-container');
+            if (container) {
+                const val = pendingInput.value.trim();
+                const chip = document.createElement('div');
+                chip.className = 'sub-item-chip';
+                chip.innerHTML = `
+                    <span class="sub-item-text">${val}</span>
+                    <span class="material-symbols-outlined remove-sub-item">close</span>
+                `;
+                chip.querySelector('.remove-sub-item').addEventListener('click', () => chip.remove());
+                container.appendChild(chip);
+                pendingInput.value = '';
+            }
+        }
+
         const itemEls = cells[1].querySelectorAll('.sub-item-text');
         const items   = Array.from(itemEls).map(el => el.textContent.trim()).filter(Boolean);
 
@@ -172,6 +190,42 @@ function initChecklist() {
     }
 }
 
+// Markdown renderer (for LLM reasoning output)
+function escapeHtml(text) {
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function inlineMarkdown(text) {
+    text = escapeHtml(text);
+    text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    return text;
+}
+
+function parseMarkdown(text) {
+    if (!text) return '';
+    const lines = text.split('\n');
+    let html = '';
+    let inList = false;
+
+    for (const line of lines) {
+        const listMatch = line.match(/^[-•*]\s+(.+)$/);
+        if (listMatch) {
+            if (!inList) { html += '<ul style="margin:0.25rem 0 0 1rem;padding:0;">'; inList = true; }
+            html += `<li>${inlineMarkdown(listMatch[1])}</li>`;
+        } else {
+            if (inList) { html += '</ul>'; inList = false; }
+            if (line.trim()) html += inlineMarkdown(line);
+        }
+    }
+    if (inList) html += '</ul>';
+    return html;
+}
+
 // Verification
 function setLoading(on) {
     const btn = document.getElementById('verify-btn');
@@ -179,7 +233,14 @@ function setLoading(on) {
     btn.disabled = on;
     btn.style.opacity = on ? '0.6' : '1';
     const icon = btn.querySelector('.material-symbols-outlined');
-    if (icon) icon.textContent = on ? 'hourglass_top' : 'verified';
+    if (icon) {
+        icon.textContent = on ? 'progress_activity' : 'verified';
+        if (on) {
+            icon.classList.add('spinning');
+        } else {
+            icon.classList.remove('spinning');
+        }
+    }
 }
 
 function showError(msg) {
@@ -213,7 +274,7 @@ function renderResults(data) {
                         style="font-variation-settings:'FILL' 1">${isFail ? 'error' : 'check_circle'}</span>
                     <div>
                         <p class="result-item-title">${section.section} — ${item.requirement}</p>
-                        <p class="result-item-sub">${isFail ? item.reasoning : (item.evidence || item.reasoning)}</p>
+                        <p class="result-item-sub">${parseMarkdown(isFail ? item.reasoning : (item.evidence || item.reasoning))}</p>
                     </div>
                 </div>
                 <span class="result-badge">${isFail ? 'MISSING' : 'FOUND'}</span>`;

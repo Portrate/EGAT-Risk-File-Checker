@@ -115,11 +115,6 @@ h4 {
   align-items: start;
 }
 
-@media (min-width: 900px) {
-  .grid-layout {
-    grid-template-columns: 3fr 2fr;
-  }
-}
 
 .text-md {
   font-size: 0.875rem;
@@ -133,4 +128,13 @@ button {
   background: transparent;
   border: none;
   cursor: pointer;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
 }

@@ -6,121 +6,113 @@ import httpx
 OLLAMA_URL = "http://localhost:11434/api/generate"
 MODEL = "gemma4:e4b"
 
-# Truncate document to this many characters to stay within the model context window.
-# Gemma 4 has a 128k context, but large prompts slow inference significantly.
 MAX_DOC_CHARS = 24_000
 
+_SINGLE_ITEM_SCHEMA = {
+    "type": "object",
+    "required": ["status", "reasoning_in_thai", "evidence"],
+    "properties": {
+        "status": {"type": "string", "enum": ["pass", "partial", "fail"]},
+        "reasoning_in_thai": {"type": "string", "description": "อธิบายเหตุผลเป็นภาษาไทยเท่านั้น"},
+        "evidence": {"type": ["string", "null"]},
+    },
+}
 
-def build_prompt(document_text: str, checklist: list[dict]) -> str:
+
+def _build_single_prompt(document_text: str, section_title: str, requirement: str) -> str:
     if len(document_text) > MAX_DOC_CHARS:
         document_text = (
             document_text[:MAX_DOC_CHARS]
             + "\n\n[เอกสารถูกตัดทอนเนื่องจากความยาวเกินกำหนด]"
         )
 
-    checklist_json = json.dumps(checklist, ensure_ascii=False, indent=2)
+    return f"""คุณคือระบบตรวจสอบเอกสาร กรุณาตรวจสอบว่าเอกสารด้านล่างมีเนื้อหาตรงกับข้อกำหนดที่ระบุหรือไม่
 
-    return f"""You are a document compliance checker. Your task is to check whether each item in the CHECKLIST is present in the DOCUMENT.
+หัวข้อ: {section_title}
+ข้อกำหนด: {requirement}
 
-You MUST respond in THAI language using EXACTLY this JSON structure — do not change the key names, do not add extra keys:
-
+ตอบเป็นภาษาไทยเท่านั้น โดยใช้รูปแบบ JSON ดังนี้:
 {{
-  "results": [
-    {{
-      "section": "SECTION_TITLE",
-      "items": [
-        {{
-          "requirement": "ITEM_TEXT",
-          "status": "pass",
-          "reasoning": "EXPLANATION_IN_THAI",
-          "evidence": "SHORT_QUOTE_OR_null"
-        }}
-      ]
-    }}
-  ]
+  "status": "pass" | "partial" | "fail",
+  "reasoning_in_thai": "<อธิบายเหตุผล 1-2 ประโยค เป็นภาษาไทยเท่านั้น ห้ามใช้ภาษาอังกฤษ>",
+  "evidence": "<ข้อความอ้างอิงจากเอกสารไม่เกิน 100 ตัวอักษร หรือ null>"
 }}
 
-Rules:
-- "results" must be an array, one entry per checklist section
-- "section" = the section title exactly as given in the checklist
-- "items" = array of results, one per sub-item in that section
-- "status" must be exactly one of: "pass", "partial", "fail"
-  - "pass" = item is clearly present in the document
-  - "partial" = item is partially addressed
-  - "fail" = item is absent from the document
-- "reasoning" = 1-2 sentences in Thai explaining the decision
-- "evidence" = a direct quote (≤100 chars) from the document if found, otherwise the JSON value null (not the string "null")
+กฎ:
+- "pass"    = พบเนื้อหาที่ตรงกับข้อกำหนดอย่างชัดเจน
+- "partial" = พบเนื้อหาที่เกี่ยวข้องบางส่วน
+- "fail"    = ไม่พบเนื้อหาที่ตรงกับข้อกำหนด
+- "evidence" ต้องเป็น null เมื่อ status เป็น "fail"
+- ห้ามใช้ภาษาอังกฤษในการอธิบาย (reasoning_in_thai) เด็ดขาด ต้องตอบเป็นภาษาไทย
 
 DOCUMENT:
-{document_text}
-
-CHECKLIST:
-{checklist_json}
-
-Now output ONLY the JSON object. No explanation, no markdown, no extra text."""
+{document_text}"""
 
 
 def _extract_json(text: str) -> dict:
-    """Parse JSON from the LLM response, tolerating markdown fences."""
     text = text.strip()
-    # Strip ```json ... ``` fences if present
     fenced = re.search(r"```(?:json)?\s*([\s\S]+?)\s*```", text)
     if fenced:
         text = fenced.group(1)
     return json.loads(text)
 
 
-_RESPONSE_SCHEMA = {
-    "type": "object",
-    "required": ["results"],
-    "properties": {
-        "results": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "required": ["section", "items"],
-                "properties": {
-                    "section": {"type": "string"},
-                    "items": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "required": ["requirement", "status", "reasoning", "evidence"],
-                            "properties": {
-                                "requirement": {"type": "string"},
-                                "status": {"type": "string", "enum": ["pass", "partial", "fail"]},
-                                "reasoning": {"type": "string"},
-                                "evidence": {"type": ["string", "null"]},
-                            },
-                        },
-                    },
-                },
-            },
-        }
-    },
-}
-
-
-async def analyze_with_llm(document_text: str, checklist: list[dict]) -> dict:
-    """Send document + checklist to Ollama and return the parsed result dict."""
-    prompt = build_prompt(document_text, checklist)
-
-    async with httpx.AsyncClient(timeout=300) as client:
+async def _check_single_item(
+    client: httpx.AsyncClient,
+    document_text: str,
+    section_title: str,
+    requirement: str,
+) -> dict:
+    prompt = _build_single_prompt(document_text, section_title, requirement)
+    try:
         response = await client.post(
             OLLAMA_URL,
             json={
                 "model": MODEL,
+                "system": "คุณตอบเป็นภาษาไทยเท่านั้น ห้ามใช้ภาษาอังกฤษในคำอธิบาย",
                 "prompt": prompt,
                 "stream": False,
-                "format": _RESPONSE_SCHEMA,
+                "format": _SINGLE_ITEM_SCHEMA,
             },
         )
         response.raise_for_status()
+        llm_text = response.json().get("response", "")
+        result = _extract_json(llm_text)
+        
+        if "reasoning_in_thai" in result:
+            result["reasoning"] = result.pop("reasoning_in_thai")
+        elif "reasoning" not in result:
+            result["reasoning"] = ""
+            
+        print(f"[DEBUG] '{requirement[:40]}' → {result.get('status')}")
+        return result
+    except Exception as e:
+        print(f"[ERROR] Failed checking '{requirement[:40]}': {e}")
+        return {"status": "fail", "reasoning": f"เกิดข้อผิดพลาด: {e}", "evidence": None}
 
-    raw = response.json()
-    llm_text = raw.get("response", "")
-    print(f"[DEBUG] LLM raw response (first 300 chars):\n{llm_text[:300]}")
-    result = _extract_json(llm_text)
-    print(f"[DEBUG] Parsed result keys: {list(result.keys())}")
-    print(f"[DEBUG] Number of sections in results: {len(result.get('results', []))}")
-    return result
+
+async def analyze_with_llm(document_text: str, checklist: list[dict]) -> dict:
+    """Check each sub-item individually against the document."""
+    print(f"[DEBUG] Checklist received: {json.dumps(checklist, ensure_ascii=False)}")
+
+    results = []
+    async with httpx.AsyncClient(timeout=120) as client:
+        for section in checklist:
+            section_title = section.get("title", "")
+            items_out = []
+            for requirement in section.get("items", []):
+                check = await _check_single_item(client, document_text, section_title, requirement)
+                items_out.append({
+                    "requirement": requirement,
+                    "status": check.get("status", "fail"),
+                    "reasoning": check.get("reasoning", ""),
+                    "evidence": check.get("evidence"),
+                })
+            results.append({"section": section_title, "items": items_out})
+
+    total = sum(len(s["items"]) for s in results)
+    passed = sum(1 for s in results for it in s["items"] if it["status"] == "pass")
+    return {
+        "summary": {"total": total, "passed": passed, "failed": total - passed},
+        "results": results,
+    }
