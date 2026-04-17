@@ -33,7 +33,7 @@ Ollama คือโปรแกรมที่ใช้รัน AI บนเค
 
 ### วิธีที่ 1 ดาวน์โหลด EXE (แนะนำ)
 
-1. ไปที่หน้า **[Releases](https://github.com/Portrate/EGAT-Risk-File-Checker/releases/tag/Production-Release)** ของ GitHub
+1. ไปที่หน้า **[Releases](https://github.com/Portrate/EGAT-Risk-File-Checker/releases/tag/Non-Production-Release)** ของ GitHub
 2. ดาวน์โหลดไฟล์ **`RiskFileChecker.exe`** จาก Assets
 3. เปิดไฟล์ `RiskFileChecker.exe`
 4. ถ้า Windows แจ้งเตือน **"Windows protected your PC"** → คลิก **"More info"** → **"Run anyway"**
