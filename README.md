@@ -33,13 +33,13 @@ Ollama คือโปรแกรมที่ใช้รัน AI บนเค
 
 ### วิธีที่ 1 ดาวน์โหลด EXE (แนะนำ)
 
-1. ไปที่หน้า **[Releases](https://github.com/Portrate/EGAT-Risk-File-Checker/releases/)** ของ GitHub
+1. ไปที่หน้า **[Releases](https://github.com/Portrate/EGAT-Risk-File-Checker/releases/tag/Production-Release)** ของ GitHub
 2. ดาวน์โหลดไฟล์ **`RiskFileChecker.exe`** จาก Assets
 3. เปิดไฟล์ `RiskFileChecker.exe`
 4. ถ้า Windows แจ้งเตือน **"Windows protected your PC"** → คลิก **"More info"** → **"Run anyway"**
 5. โปรแกรมจะตรวจสอบ Ollama และดาวน์โหลดโมเดล AI โดยอัตโนมัติ และเปิดเบราว์เซอร์ให้เอง
 
-> **หมายเหตุ:** การเปิดครั้งแรกอาจใช้เวลา 5–15 นาที เพื่อดาวน์โหลดโมเดล Gemma 4 (ขนาดประมาณ 9 GB)
+> **หมายเหตุ:** การเปิดครั้งแรกอาจใช้เวลา 15–20 นาที เพื่อดาวน์โหลดโมเดล Gemma 4
 > ครั้งต่อไปจะใช้เวลาเปิดเร็ว
 
 ---
