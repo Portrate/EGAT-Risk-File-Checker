@@ -65,7 +65,24 @@ def _extract_json(text: str) -> dict:
     fenced = re.search(r"```(?:json)?\s*([\s\S]+?)\s*```", text)
     if fenced:
         text = fenced.group(1)
-    return json.loads(text)
+
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    # Truncated JSON fallback: extract fields individually via regex
+    status_m = re.search(r'"status"\s*:\s*"(pass|fail)"', text)
+    reasoning_m = re.search(r'"reasoning_in_thai"\s*:\s*"([^"]*)', text)
+    evidence_m = re.search(r'"evidence"\s*:\s*"([^"]*)', text)
+    found_m = re.search(r'"found_in_document"\s*:\s*(true|false)', text)
+
+    return {
+        "status": status_m.group(1) if status_m else "fail",
+        "reasoning_in_thai": reasoning_m.group(1) if reasoning_m else "",
+        "evidence": evidence_m.group(1) if evidence_m else None,
+        "found_in_document": found_m.group(1) == "true" if found_m else (status_m is not None and status_m.group(1) == "pass"),
+    }
 
 
 def _is_thai(text: str) -> bool:
