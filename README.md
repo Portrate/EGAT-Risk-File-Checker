@@ -1,6 +1,6 @@
 # Risk File Checker — ระบบตรวจสอบเอกสาร PDF
 
-ระบบตรวจสอบเอกสาร PDF ว่ามีเนื้อหาครบถ้วนตามข้อกำหนดที่ผู้ใช้กำหนดเอง
+ระบบตรวจสอบเอกสาร PDF ว่ามีเนื้อหาครบถ้วนตามข้อกำหนดที่ผู้ใช้กำหนด
 โดยใช้ Local LLM (Gemma 4) เพื่อรักษาความลับของข้อมูล
 
 ---
@@ -20,7 +20,7 @@ Ollama คือโปรแกรมที่ใช้รัน AI บนเค
 1. เปิดเบราว์เซอร์ไปที่ https://ollama.com
 2. คลิก **"Download"** และเลือก **Windows**
 3. เปิดไฟล์ `OllamaSetup.exe` แล้วกด Install
-4. หลังติดตั้งเสร็จ Ollama จะรันอยู่เบื้องหลังอัตโนมัติ (มีไอคอนแสดงใน System Tray)
+4. หลังติดตั้งเสร็จ Ollama จะทำงานอยู่เบื้องหลังอัตโนมัติ (มีไอคอนแสดงใน System Tray)
 5. ตรวจสอบโดยเปิด Command Prompt แล้วพิมพ์:
    ```
    ollama --version
@@ -33,7 +33,7 @@ Ollama คือโปรแกรมที่ใช้รัน AI บนเค
 
 ### วิธีที่ 1 ดาวน์โหลด EXE (แนะนำ)
 
-1. ไปที่หน้า **[Releases](https://github.com/Portrate/EGAT-Risk-File-Checker/releases/)** ของ GitHub
+1. ไปที่หน้า **[Releases](https://github.com/Portrate/EGAT-Risk-File-Checker/releases/tag/Production-Release)** ของ GitHub
 2. ดาวน์โหลดไฟล์ **`RiskFileChecker.exe`** จาก Assets
 3. เปิดไฟล์ `RiskFileChecker.exe`
 4. ถ้า Windows แจ้งเตือน **"Windows protected your PC"** → คลิก **"More info"** → **"Run anyway"**
@@ -87,7 +87,7 @@ Ollama คือโปรแกรมที่ใช้รัน AI บนเค
 | `Ollama not found` | ติดตั้ง Ollama จาก https://ollama.com แล้วรีสตาร์ท |
 | เชื่อมต่อ Ollama ไม่ได้ | ตรวจสอบว่ามีไอคอน Ollama ใน System Tray ถ้าไม่มีให้เปิด Ollama ก่อน |
 | หน้าเว็บไม่เปิด | เปิดเบราว์เซอร์แล้วพิมพ์ `http://localhost:8000` ด้วยตนเอง |
-| โมเดลดาวน์โหลดช้า | โมเดลมีขนาดประมาณ 9 GB ขึ้นอยู่กับความเร็วอินเทอร์เน็ต รอโหลดจนเสร็จ |
-| ผลลัพธ์แสดงช้า | ควรมี RAM อย่างน้อย 8 GB ถ้ามี GPU จะทำงานได้เร็วขึ้น |
+| โมเดลดาวน์โหลดช้า | ขึ้นอยู่กับความเร็วอินเทอร์เน็ต รอโหลดจนเสร็จ |
+| ผลลัพธ์แสดงช้า | ควรมี RAM อย่างน้อย 16 GB ถ้ามี GPU จะทำงานได้เร็วขึ้น |
 | `Port 8000 already in use` | รีสตาร์ทเครื่องหรือปิดโปรแกรมอื่นที่ใช้ port 8000 |
 | `Python not found` (วิธีที่ 2) | ติดตั้ง Python ใหม่โดยติ๊ก **"Add Python to PATH"** |
