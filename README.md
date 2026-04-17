@@ -1,7 +1,7 @@
 # Risk File Checker — ระบบตรวจสอบเอกสาร PDF
 
 ระบบตรวจสอบเอกสาร PDF ว่ามีเนื้อหาครบถ้วนตามข้อกำหนดที่ผู้ใช้กำหนดเอง
-โดยใช้ Local LLM (Gemma 4) เพื่อรักษาความลับของข้อมูล — **ข้อมูลไม่ออกนอกเครื่อง**
+โดยใช้ Local LLM (Gemma 4) เพื่อรักษาความลับของข้อมูล
 
 ---
 
@@ -31,11 +31,11 @@ Ollama คือโปรแกรมที่ใช้รัน AI บนเค
 
 ## ขั้นตอนที่ 2 เลือกวิธีติดตั้งโปรแกรม
 
-### วิธีที่ 1 ดาวน์โหลด EXE (แนะนำ ง่ายที่สุด ไม่ต้องติดตั้ง Python)
+### วิธีที่ 1 ดาวน์โหลด EXE (แนะนำ)
 
-1. ไปที่หน้า **[Releases](../../releases)** ของ GitHub
+1. ไปที่หน้า **[Releases](https://github.com/Portrate/EGAT-Risk-File-Checker/releases/)** ของ GitHub
 2. ดาวน์โหลดไฟล์ **`RiskFileChecker.exe`** จาก Assets
-3. เปิดไฟล์ `OllamaSetup.exe`
+3. เปิดไฟล์ `RiskFileChecker.exe`
 4. ถ้า Windows แจ้งเตือน **"Windows protected your PC"** → คลิก **"More info"** → **"Run anyway"**
 5. โปรแกรมจะตรวจสอบ Ollama และดาวน์โหลดโมเดล AI โดยอัตโนมัติ และเปิดเบราว์เซอร์ให้เอง
 
@@ -44,7 +44,7 @@ Ollama คือโปรแกรมที่ใช้รัน AI บนเค
 
 ---
 
-### วิธีที่ 2 — ใช้ start.bat (ต้องติดตั้ง Python)
+### วิธีที่ 2 ใช้ start.bat (ต้องติดตั้ง Python)
 
 #### ติดตั้ง Python
 
