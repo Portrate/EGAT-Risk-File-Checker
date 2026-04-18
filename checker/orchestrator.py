@@ -6,7 +6,7 @@ import httpx
 OLLAMA_URL = "http://localhost:11434/api/generate"
 MODEL = "gemma4:26b"
 OLLAMA_TIMEOUT = httpx.Timeout(connect=30.0, read=1200.0, write=60.0, pool=10.0)
-OLLAMA_OPTIONS = {"num_ctx": 32768, "num_predict": 512, "temperature": 0}
+OLLAMA_OPTIONS = {"num_ctx": 32768, "num_predict": 256, "temperature": 0, "repeat_penalty": 1.3, "repeat_last_n": 64}
 
 CHUNK_SIZE = 24_000      # characters per chunk sent to LLM
 CHUNK_OVERLAP = 2_000   # overlap between consecutive chunks to avoid missing content at boundaries
@@ -85,6 +85,44 @@ def _extract_json(text: str) -> dict:
     }
 
 
+def _sanitize_reasoning(text: str) -> str:
+    """Truncate at the first sign of repetition or artifact — char-level or word-level."""
+    if not text:
+        return text
+
+    # 1. Character-level exact loop (e.g. /Dok/Dok/Dok or _en_en_en)
+    m = re.search(r"(.{3,20})\1{3,}", text)
+    if m:
+        return text[: m.start()].rstrip(" /_.,-")
+
+    # 2. English artifact words appearing inside Thai text (PDF redaction markers etc.)
+    artifact = re.search(r"\b(Erased|Redacted|Dok)\b", text)
+    if artifact:
+        return text[: artifact.start()].rstrip()
+
+    # 3. Word-level phrase repetition: any Thai word (4+ chars) appearing 3+ times,
+    #    or any bigram (8+ chars) appearing 2+ times — truncate before the 2nd/3rd hit.
+    words = text.split()
+    word_positions: dict[str, list[int]] = {}
+    pos = 0
+    for w in words:
+        if len(w) >= 4:
+            word_positions.setdefault(w, []).append(pos)
+        pos += len(w) + 1  # +1 for the space
+
+    cutoff = len(text)
+    for w, positions in word_positions.items():
+        if len(positions) >= 3:
+            cutoff = min(cutoff, positions[2])  # start of 3rd occurrence
+        elif len(positions) >= 2 and len(w) >= 8:
+            cutoff = min(cutoff, positions[1])  # start of 2nd occurrence of long phrase
+
+    if cutoff < len(text):
+        return text[:cutoff].rstrip()
+
+    return text
+
+
 def _is_thai(text: str) -> bool:
     """Return True if text contains a meaningful amount of Thai characters."""
     if not text:
@@ -118,9 +156,11 @@ async def _check_chunk(
     print(f"[DEBUG] done_reason={raw.get('done_reason')} ctx_used={raw.get('prompt_eval_count')} gen_tokens={raw.get('eval_count')} raw_response={repr(llm_text[:120])}")
     result = _extract_json(llm_text)
     if "reasoning_in_thai" in result:
-        result["reasoning"] = result.pop("reasoning_in_thai")
+        result["reasoning"] = _sanitize_reasoning(result.pop("reasoning_in_thai"))
     elif "reasoning" not in result:
         result["reasoning"] = ""
+    else:
+        result["reasoning"] = _sanitize_reasoning(result["reasoning"])
 
     # If reasoning came back in English, retry once with a stronger instruction
     if not _is_thai(result.get("reasoning", "")):
@@ -145,9 +185,11 @@ async def _check_chunk(
         retry_text = retry_response.json().get("response", "")
         retry_result = _extract_json(retry_text)
         if "reasoning_in_thai" in retry_result:
-            retry_result["reasoning"] = retry_result.pop("reasoning_in_thai")
+            retry_result["reasoning"] = _sanitize_reasoning(retry_result.pop("reasoning_in_thai"))
         elif "reasoning" not in retry_result:
             retry_result["reasoning"] = ""
+        else:
+            retry_result["reasoning"] = _sanitize_reasoning(retry_result["reasoning"])
         if _is_thai(retry_result.get("reasoning", "")):
             result = retry_result
 
