@@ -1,5 +1,6 @@
 // Upload
 let selectedFile = null;
+let lastResult = null;
 
 function getSelectedFile() {
     return selectedFile;
@@ -258,6 +259,7 @@ function showError(msg) {
 function renderResults(data) {
     const container = document.getElementById('result-items');
     const scoreEl   = document.getElementById('score-value');
+    const exportBtn = document.getElementById('export-btn');
 
     if (scoreEl) scoreEl.textContent = `${data.similarity_score}%`;
     if (!container) return;
@@ -281,6 +283,42 @@ function renderResults(data) {
             container.appendChild(div);
         }
     }
+
+    lastResult = data;
+    if (exportBtn) exportBtn.style.display = 'inline-flex';
+}
+
+async function exportToExcel() {
+    if (!lastResult) return;
+    const exportBtn = document.getElementById('export-btn');
+    if (exportBtn) exportBtn.disabled = true;
+    try {
+        const payload = {
+            filename: getSelectedFile()?.name || 'document.pdf',
+            ...lastResult,
+        };
+        const res = await fetch('/export/excel', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error('ส่งออกไม่สำเร็จ');
+        const blob = await res.blob();
+        const disposition = res.headers.get('Content-Disposition') || '';
+        let fname = 'ผลการตรวจสอบ.xlsx';
+        const match = disposition.match(/filename\*=UTF-8''(.+)/i);
+        if (match) fname = decodeURIComponent(match[1]);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fname;
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch (err) {
+        alert(err.message);
+    } finally {
+        if (exportBtn) exportBtn.disabled = false;
+    }
 }
 
 async function runVerification() {
@@ -291,6 +329,9 @@ async function runVerification() {
     if (checklist.length === 0) { showError('Please add at least one checklist item.'); return; }
 
     setLoading(true);
+    lastResult = null;
+    const exportBtn = document.getElementById('export-btn');
+    if (exportBtn) exportBtn.style.display = 'none';
     try {
         const form = new FormData();
         form.append('file', file);
@@ -313,3 +354,4 @@ async function runVerification() {
 initUpload();
 initChecklist();
 document.getElementById('verify-btn').addEventListener('click', runVerification);
+document.getElementById('export-btn').addEventListener('click', exportToExcel);
