@@ -72,7 +72,7 @@ function getChecklist() {
                 const val = pendingInput.value.trim();
                 const scoreInput = cells[1].querySelector('.sub-item-score-input');
                 const parsedScore = scoreInput ? parseFloat(scoreInput.value) : NaN;
-                const score = !isNaN(parsedScore) ? parsedScore : 0;
+                const score = !isNaN(parsedScore) ? Math.max(0, parsedScore) : 0;
                 const chip = document.createElement('div');
                 chip.className = 'sub-item-chip';
                 chip.dataset.score = score;
@@ -93,7 +93,7 @@ function getChecklist() {
             const parsed = parseFloat(el.dataset.score);
             return {
                 name: el.querySelector('.sub-item-text').textContent.trim(),
-                score: !isNaN(parsed) ? parsed : 0
+                score: !isNaN(parsed) ? Math.max(0, parsed) : 0
             };
         }).filter(item => item.name);
 
@@ -117,7 +117,7 @@ function bindSubItemEvents(row) {
         const val = input.value.trim();
         if (!val) return;
         const parsedScore = scoreInput ? parseFloat(scoreInput.value) : NaN;
-        const score = !isNaN(parsedScore) ? parsedScore : 0;
+        const score = !isNaN(parsedScore) ? Math.max(0, parsedScore) : 0;
 
         const chip = document.createElement('div');
         chip.className = 'sub-item-chip';
