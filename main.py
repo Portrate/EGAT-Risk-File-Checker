@@ -50,7 +50,7 @@ async def analyze(
     except ValidationError as e:
         raise HTTPException(status_code=422, detail=e.errors())
 
-    checklist_data = [{"title": s.title, "items": s.items} for s in sections]
+    checklist_data = [{"title": s.title, "items": [{"name": i.name, "score": i.score} for i in s.items]} for s in sections]
 
     try:
         llm_result = await analyze_with_llm(document_text, checklist_data)
@@ -68,16 +68,27 @@ async def analyze(
 
     total = 0
     passed = 0
+    total_score = 0.0
+    passed_score = 0.0
     for section in results:
         for item in section.get("items", []):
             total += 1
+            item_score = float(item.get("score", 0.0))
+            total_score += item_score
             if item.get("status") == "pass":
                 passed += 1
+                passed_score += item_score
 
-    score = round(passed / total * 100) if total > 0 else 0
+    score = round(passed_score / total_score * 100) if total_score > 0 else 0
 
     return {
-        "summary": {"total": total, "passed": passed, "failed": total - passed},
+        "summary": {
+            "total": total,
+            "passed": passed,
+            "failed": total - passed,
+            "total_score": total_score,
+            "passed_score": passed_score
+        },
         "similarity_score": score,
         "results": results,
     }
@@ -110,7 +121,8 @@ async def export_excel(payload: dict):
         ("จำนวนรายการทั้งหมด", summary.get("total", 0)),
         ("ผ่าน (FOUND)", summary.get("passed", 0)),
         ("ไม่ผ่าน (MISSING)", summary.get("failed", 0)),
-        ("คะแนน", f"{score}%"),
+        ("คะแนนที่ได้", f"{summary.get('passed_score', 0)} / {summary.get('total_score', 0)}"),
+        ("คะแนน (%)", f"{score}%"),
     ]
 
     for label, value in summary_rows:
@@ -124,14 +136,15 @@ async def export_excel(payload: dict):
     # ---- Sheet 2: Detailed results ----
     ws2 = wb.create_sheet("ผลการตรวจสอบ")
 
-    ws2.column_dimensions["A"].width = 6
-    ws2.column_dimensions["B"].width = 28
-    ws2.column_dimensions["C"].width = 36
+    ws2.column_dimensions["A"].width = 28
+    ws2.column_dimensions["B"].width = 36
+    ws2.column_dimensions["C"].width = 12
     ws2.column_dimensions["D"].width = 12
-    ws2.column_dimensions["E"].width = 40
+    ws2.column_dimensions["E"].width = 12
     ws2.column_dimensions["F"].width = 40
+    ws2.column_dimensions["G"].width = 40
 
-    headers = ["#", "หัวข้อหลัก", "รายการย่อย", "ผล", "เหตุผล", "หลักฐาน"]
+    headers = ["หัวข้อหลัก", "รายการย่อย", "คะแนนเต็ม", "คะแนนที่ได้", "ผล", "เหตุผล", "หลักฐาน"]
     ws2.append(headers)
     header_row = ws2[1]
     for cell in header_row:
@@ -145,17 +158,21 @@ async def export_excel(payload: dict):
     fail_fill = PatternFill("solid", fgColor="FCE8E6")
     pass_font = Font(color="137333", bold=True)
     fail_font = Font(color="C5221F", bold=True)
+    score_pass_font = Font(color="137333", bold=True)
+    score_fail_font = Font(color="C5221F", bold=True)
 
-    row_num = 1
     for section in results_data:
         section_title = section.get("section", "")
         for item in section.get("items", []):
             status = item.get("status", "")
             is_pass = status == "pass"
+            max_score = item.get("score", 0.0)
+            earned_score = max_score if is_pass else 0.0
             ws2.append([
-                row_num,
                 section_title,
                 item.get("requirement", ""),
+                max_score,
+                earned_score,
                 "FOUND" if is_pass else "MISSING",
                 item.get("reasoning", ""),
                 item.get("evidence") or "",
@@ -165,10 +182,12 @@ async def export_excel(payload: dict):
             for cell in data_row:
                 cell.fill = row_fill
                 cell.alignment = Alignment(horizontal="left", vertical="top", wrap_text=True)
-            data_row[3].font = pass_font if is_pass else fail_font
+            data_row[2].alignment = center
+            data_row[3].font = score_pass_font if is_pass else score_fail_font
             data_row[3].alignment = center
+            data_row[4].font = pass_font if is_pass else fail_font
+            data_row[4].alignment = center
             ws2.row_dimensions[ws2.max_row].height = 60
-            row_num += 1
 
     buf = io.BytesIO()
     wb.save(buf)

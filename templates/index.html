@@ -84,6 +84,7 @@
                                         <div class="sub-items-container"></div>
                                         <div class="add-sub-item-wrapper" style="display: flex; gap: 0.25rem; align-items: center; margin-top: 0.25rem;">
                                             <input type="text" class="sub-item-input" placeholder="พิมพ์แล้วกด + หรือ Enter" style="flex: 1;" />
+                                            <input type="number" class="sub-item-score-input" value="0" min="0" style="width: 50px; text-align: center; border: 1px solid var(--color-outline-variant); border-radius: 4px; padding: 0.25rem;" title="คะแนน" />
                                             <button type="button" class="btn-icon add-sub-item-btn" style="padding: 0.25rem; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px;">
                                                 <span class="material-symbols-outlined" style="font-size: 1.25rem;" data-icon="add">add</span>
                                             </button>
@@ -132,8 +133,12 @@
                         </div>
 
                         <div class="results-footer" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
-                            <p class="text-on-surface-variant" style="font-size: 0.75rem;">คะแนนการประเมิน: <span
-                                    id="score-value" class="text-on-surface" style="font-weight: 700;">—</span></p>
+                            <div style="display: flex; gap: 1rem; align-items: center;">
+                                <p class="text-on-surface-variant" style="font-size: 0.75rem;">คะแนนที่ได้: <span
+                                        id="total-score-value" class="text-on-surface" style="font-weight: 700;">—</span></p>
+                                <p class="text-on-surface-variant" style="font-size: 0.75rem;">เปอร์เซ็นต์ความครบถ้วน: <span
+                                        id="score-value" class="text-on-surface" style="font-weight: 700;">—</span></p>
+                            </div>
                             <button id="export-btn" class="btn-export" style="display: none;">
                                 <span class="material-symbols-outlined" style="font-size: 1rem;" data-icon="download">download</span>
                                 ส่งออก Excel

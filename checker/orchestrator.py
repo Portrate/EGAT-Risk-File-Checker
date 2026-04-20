@@ -228,10 +228,13 @@ async def analyze_with_llm(document_text: str, checklist: list[dict]) -> dict:
         for section in checklist:
             section_title = section.get("title", "")
             items_out = []
-            for requirement in section.get("items", []):
+            for req_item in section.get("items", []):
+                requirement = req_item.get("name", "")
+                score = req_item.get("score", 0.0)
                 check = await _check_single_item(client, document_text, section_title, requirement)
                 items_out.append({
                     "requirement": requirement,
+                    "score": score,
                     "status": check.get("status", "fail"),
                     "reasoning": check.get("reasoning", ""),
                     "evidence": check.get("evidence"),

@@ -70,20 +70,32 @@ function getChecklist() {
             const container = cells[1].querySelector('.sub-items-container');
             if (container) {
                 const val = pendingInput.value.trim();
+                const scoreInput = cells[1].querySelector('.sub-item-score-input');
+                const parsedScore = scoreInput ? parseFloat(scoreInput.value) : NaN;
+                const score = !isNaN(parsedScore) ? parsedScore : 0;
                 const chip = document.createElement('div');
                 chip.className = 'sub-item-chip';
+                chip.dataset.score = score;
                 chip.innerHTML = `
                     <span class="sub-item-text">${val}</span>
+                    <span class="sub-item-score-badge" style="background:var(--color-surface-container-highest); border-radius:10px; padding:0 4px; font-size:0.6rem; font-weight:bold; margin-left:4px;">${score}</span>
                     <span class="material-symbols-outlined remove-sub-item">close</span>
                 `;
                 chip.querySelector('.remove-sub-item').addEventListener('click', () => chip.remove());
                 container.appendChild(chip);
                 pendingInput.value = '';
+                if (scoreInput) scoreInput.value = '0';
             }
         }
 
-        const itemEls = cells[1].querySelectorAll('.sub-item-text');
-        const items   = Array.from(itemEls).map(el => el.textContent.trim()).filter(Boolean);
+        const itemEls = cells[1].querySelectorAll('.sub-item-chip');
+        const items   = Array.from(itemEls).map(el => {
+            const parsed = parseFloat(el.dataset.score);
+            return {
+                name: el.querySelector('.sub-item-text').textContent.trim(),
+                score: !isNaN(parsed) ? parsed : 0
+            };
+        }).filter(item => item.name);
 
         if (!title && items.length === 0) return;
 
@@ -95,6 +107,7 @@ function getChecklist() {
 
 function bindSubItemEvents(row) {
     const input = row.querySelector('.sub-item-input');
+    const scoreInput = row.querySelector('.sub-item-score-input');
     const btn = row.querySelector('.add-sub-item-btn');
     const container = row.querySelector('.sub-items-container');
 
@@ -103,11 +116,15 @@ function bindSubItemEvents(row) {
     function addSubItem() {
         const val = input.value.trim();
         if (!val) return;
+        const parsedScore = scoreInput ? parseFloat(scoreInput.value) : NaN;
+        const score = !isNaN(parsedScore) ? parsedScore : 0;
 
         const chip = document.createElement('div');
         chip.className = 'sub-item-chip';
+        chip.dataset.score = score;
         chip.innerHTML = `
             <span class="sub-item-text">${val}</span>
+            <span class="sub-item-score-badge" style="background:var(--color-surface-container-highest); border-radius:10px; padding:0 4px; font-size:0.6rem; font-weight:bold; margin-left:4px;">${score}</span>
             <span class="material-symbols-outlined remove-sub-item">close</span>
         `;
         
@@ -117,6 +134,7 @@ function bindSubItemEvents(row) {
 
         container.appendChild(chip);
         input.value = '';
+        if (scoreInput) scoreInput.value = '0';
     }
 
     btn.addEventListener('click', addSubItem);
@@ -126,6 +144,15 @@ function bindSubItemEvents(row) {
             addSubItem();
         }
     });
+    if (scoreInput) {
+        scoreInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addSubItem();
+                input.focus();
+            }
+        });
+    }
 }
 
 function initChecklist() {
@@ -148,6 +175,7 @@ function initChecklist() {
                 <div class="sub-items-container"></div>
                 <div class="add-sub-item-wrapper" style="display: flex; gap: 0.25rem; align-items: center; margin-top: 0.25rem;">
                     <input type="text" class="sub-item-input" placeholder="พิมพ์แล้วกด + หรือ Enter" style="flex: 1;" />
+                    <input type="number" class="sub-item-score-input" value="0" min="0" style="width: 50px; text-align: center; border: 1px solid var(--color-outline-variant); border-radius: 4px; padding: 0.25rem;" title="คะแนน" />
                     <button type="button" class="btn-icon add-sub-item-btn" style="padding: 0.25rem; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px;">
                         <span class="material-symbols-outlined" style="font-size: 1.25rem;">add</span>
                     </button>
@@ -259,15 +287,20 @@ function showError(msg) {
 function renderResults(data) {
     const container = document.getElementById('result-items');
     const scoreEl   = document.getElementById('score-value');
+    const totalScoreEl = document.getElementById('total-score-value');
     const exportBtn = document.getElementById('export-btn');
 
     if (scoreEl) scoreEl.textContent = `${data.similarity_score}%`;
+    if (totalScoreEl && data.summary) {
+        totalScoreEl.textContent = `${data.summary.passed_score} / ${data.summary.total_score}`;
+    }
     if (!container) return;
     container.innerHTML = '';
 
     for (const section of data.results) {
         for (const item of section.items) {
             const isFail = item.status === 'fail';
+            const score = item.score !== undefined ? item.score : 0;
             const div = document.createElement('div');
             div.className = `result-item${isFail ? ' error' : ''}`;
             div.innerHTML = `
@@ -279,7 +312,10 @@ function renderResults(data) {
                         <p class="result-item-sub">${parseMarkdown(isFail ? item.reasoning : (item.evidence || item.reasoning))}</p>
                     </div>
                 </div>
-                <span class="result-badge">${isFail ? 'MISSING' : 'FOUND'}</span>`;
+                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem;">
+                    <span class="result-badge">${isFail ? 'MISSING' : 'FOUND'}</span>
+                    <span class="result-score-text" style="font-size: 0.75rem; font-weight: 700; color: ${isFail ? 'var(--color-error)' : 'var(--color-primary)'};">${isFail ? `0` : `+${score}`} คะแนน</span>
+                </div>`;
             container.appendChild(div);
         }
     }
