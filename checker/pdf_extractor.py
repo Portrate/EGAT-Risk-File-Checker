@@ -1,75 +1,117 @@
+import io
+import logging
 import re
 from pathlib import Path
 
 import fitz  # pymupdf
 
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Optional OCR support via Tesseract (pytesseract + Pillow).
+# If either package is missing the extractor falls back to native text only.
+# ---------------------------------------------------------------------------
+try:
+    import pytesseract
+    from PIL import Image as PILImage
+
+    # On Windows the installer puts Tesseract here by default.
+    # pytesseract picks it up from PATH first; this is a fallback.
+    import sys
+    if sys.platform == "win32":
+        import shutil
+        if not shutil.which("tesseract"):
+            pytesseract.pytesseract.tesseract_cmd = (
+                r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+            )
+
+    _OCR_AVAILABLE = True
+except ImportError:
+    _OCR_AVAILABLE = False
+    logger.warning(
+        "pytesseract / Pillow not installed — OCR disabled. "
+        "Run: pip install pytesseract pillow  (and install Tesseract binary)"
+    )
+
+# Minimum selectable-text length before we treat a page as image-only.
+_OCR_THRESHOLD = 50
+# Render DPI for OCR — higher = better accuracy, slower.
+_OCR_DPI = 200
+# Tesseract language string. Thai + English covers EGAT reports well.
+_OCR_LANG = "tha+eng"
+
 
 def _clean_text(text: str) -> str:
-    """Normalize whitespace while preserving paragraph breaks."""
-    # Collapse runs of spaces/tabs but keep newlines
     text = re.sub(r"[ \t]+", " ", text)
-    # Collapse more than two consecutive newlines into two
     text = re.sub(r"\n{3,}", "\n\n", text)
     return text.strip()
 
 
+def _ocr_page(page: fitz.Page) -> str:
+    """Render *page* to a bitmap and return OCR text. Returns '' on any error."""
+    if not _OCR_AVAILABLE:
+        return ""
+    try:
+        mat = fitz.Matrix(_OCR_DPI / 72, _OCR_DPI / 72)
+        pix = page.get_pixmap(matrix=mat, colorspace=fitz.csRGB)
+        img = PILImage.open(io.BytesIO(pix.tobytes("png")))
+        text = pytesseract.image_to_string(img, lang=_OCR_LANG)
+        return _clean_text(text)
+    except Exception as exc:
+        logger.warning("OCR failed on page %s: %s", page.number + 1, exc)
+        return ""
+
+
+def _extract_page_text(page: fitz.Page) -> str:
+    """Return the best text for a single page, using OCR when needed."""
+    native = _clean_text(page.get_text("text"))
+    if len(native) >= _OCR_THRESHOLD:
+        return native
+    # Page has little/no selectable text — try OCR.
+    ocr = _ocr_page(page)
+    return ocr if ocr else native
+
+
 def _doc_to_text(doc: fitz.Document) -> str:
-    """Convert an open fitz Document to plain text with page markers."""
     pages: list[str] = []
     for page_num, page in enumerate(doc, start=1):
-        raw = page.get_text("text")  # plain-text layout
-        cleaned = _clean_text(raw)
-        if cleaned:
-            pages.append(f"[หน้า {page_num}]\n{cleaned}")
+        text = _extract_page_text(page)
+        if text:
+            pages.append(f"[หน้า {page_num}]\n{text}")
     return "\n\n".join(pages)
 
 
 def extract_text_from_path(pdf_path: str | Path) -> str:
-    """Extract text from a PDF file on disk.
-
-    Returns plain text with ``[หน้า N]`` markers for each page.
-    Raises FileNotFoundError if the path does not exist.
-    """
     pdf_path = Path(pdf_path)
     if not pdf_path.exists():
         raise FileNotFoundError(f"PDF not found: {pdf_path}")
-
     with fitz.open(str(pdf_path)) as doc:
         return _doc_to_text(doc)
 
 
 def extract_text_from_bytes(pdf_bytes: bytes) -> str:
-    """Extract text from raw PDF bytes (e.g. from an uploaded file).
-
-    Returns plain text with ``[หน้า N]`` markers for each page.
-    """
     with fitz.open(stream=pdf_bytes, filetype="pdf") as doc:
         return _doc_to_text(doc)
 
 
 def extract_pages_from_bytes(pdf_bytes: bytes) -> list[dict]:
-    """Return a list of dicts, one per page: ``{"page": N, "text": ...}``."""
     pages: list[dict] = []
     with fitz.open(stream=pdf_bytes, filetype="pdf") as doc:
         for page_num, page in enumerate(doc, start=1):
-            raw = page.get_text("text")
-            cleaned = _clean_text(raw)
-            if cleaned:
-                pages.append({"page": page_num, "text": cleaned})
+            text = _extract_page_text(page)
+            if text:
+                pages.append({"page": page_num, "text": text})
     return pages
 
 
 def extract_pages_from_path(pdf_path: str | Path) -> list[dict]:
-    """Return a list of dicts, one per page: ``{"page": N, "text": ...}``."""
     pdf_path = Path(pdf_path)
     if not pdf_path.exists():
         raise FileNotFoundError(f"PDF not found: {pdf_path}")
-
     pages: list[dict] = []
     with fitz.open(str(pdf_path)) as doc:
         for page_num, page in enumerate(doc, start=1):
-            raw = page.get_text("text")
-            cleaned = _clean_text(raw)
-            if cleaned:
-                pages.append({"page": page_num, "text": cleaned})
+            text = _extract_page_text(page)
+            if text:
+                pages.append({"page": page_num, "text": text})
     return pages

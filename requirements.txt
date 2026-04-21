@@ -7,3 +7,5 @@ pymupdf
 httpx
 pydantic
 openpyxl
+pytesseract
+Pillow

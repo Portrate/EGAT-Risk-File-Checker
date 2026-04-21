@@ -43,7 +43,11 @@ pyinstaller ^
     --hidden-import httpx ^
     --hidden-import jinja2 ^
     --hidden-import aiofiles ^
+    --hidden-import pytesseract ^
+    --hidden-import PIL ^
+    --hidden-import PIL.Image ^
     --collect-all pymupdf ^
+    --collect-all PIL ^
     run.py
 
 if errorlevel 1 (
