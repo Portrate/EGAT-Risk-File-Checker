@@ -71,7 +71,7 @@ def ensure_model(model_name: str) -> bool:
         pass
 
     print(f"  กำลังดาวน์โหลดโมเดล {model_name}...")
-    print(f"  (ครั้งแรกอาจใช้เวลา 5-15 นาที ขนาดประมาณ 9 GB)")
+    print(f"  (ครั้งแรกอาจใช้เวลา 10-20 นาที ขนาดประมาณ 18 GB)")
     print()
     try:
         subprocess.run(["ollama", "pull", model_name], timeout=1800)
