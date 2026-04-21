@@ -79,7 +79,7 @@ async def analyze(
                 passed += 1
                 passed_score += item_score
 
-    score = round(passed_score / total_score * 100) if total_score > 0 else 0
+    score = round(passed / total * 100) if total > 0 else 0
 
     return {
         "summary": {
