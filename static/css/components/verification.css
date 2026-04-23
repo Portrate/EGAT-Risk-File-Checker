@@ -1,4 +1,4 @@
-/* verification.css */
+/* verification.css — upload card, verify button, and results panel */
 
 .right-section {
   display: flex;
@@ -6,7 +6,7 @@
   gap: var(--spacing-6);
 }
 
-/* Upload Card */
+/* Upload Card — dashed drop zone; border turns solid blue on hover/drag */
 .upload-card {
   background-color: var(--color-surface-container-low);
   border: 2px dashed var(--color-outline-variant);
@@ -25,6 +25,7 @@
   border-color: var(--color-primary);
 }
 
+/* Icon circle that scales up slightly on hover for a tactile feel */
 .upload-icon-wrapper {
   width: 4rem;
   height: 4rem;
@@ -62,7 +63,7 @@
   font-style: italic;
 }
 
-/* Signature CTA */
+/* Primary CTA — full-width gradient button with a shadow lift on hover */
 .btn-signature {
   width: 100%;
   padding: var(--spacing-4);
@@ -87,11 +88,11 @@
   transform: scale(0.98);
 }
 
-/* Results Area */
+/* Results panel */
 .results-card {
   background-color: var(--color-surface-container-lowest);
   border-radius: var(--radius-xl);
-  box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); /* very soft shadow */
+  box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);
   overflow: hidden;
   padding: var(--spacing-6);
 }
@@ -112,6 +113,7 @@
   gap: var(--spacing-3);
 }
 
+/* Each result row — left border colour signals pass (blue) vs fail (red) */
 .result-item {
   display: flex;
   align-items: center;
@@ -150,6 +152,7 @@
   font-style: italic;
 }
 
+/* FOUND/MISSING badge */
 .result-badge {
   font-size: 0.75rem;
   font-weight: 700;
@@ -161,7 +164,7 @@
 
 .result-item.error .result-badge {
   color: var(--color-error);
-  background-color: rgba(254, 137, 131, 0.2); /* error-container / 20 */
+  background-color: rgba(254, 137, 131, 0.2);
 }
 
 .results-footer {
@@ -173,7 +176,7 @@
   align-items: center;
 }
 
-/* Featured Insights Image */
+/* Decorative insight banner with a parallax-style hover zoom */
 .insight-card {
   position: relative;
   width: 100%;
@@ -195,6 +198,7 @@
   transform: scale(1.05);
 }
 
+/* Dark gradient overlay keeps the text readable over any image */
 .insight-overlay {
   position: absolute;
   inset: 0;
@@ -213,7 +217,7 @@
 }
 
 .insight-chip {
-  background-color: rgba(0, 86, 210, 0.2); /* primary / 20 */
+  background-color: rgba(0, 86, 210, 0.2);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255,255,255,0.2);
   color: white;
@@ -234,6 +238,6 @@
 }
 
 .insight-desc {
-  color: #dbeafe; /* light blue approx */
+  color: #dbeafe;
   font-size: 0.875rem;
 }

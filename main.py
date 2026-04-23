@@ -13,7 +13,7 @@ from checker.models import ChecklistSection
 from checker.orchestrator import MODEL, analyze_with_llm
 from checker.pdf_extractor import extract_text_from_bytes
 
-# When frozen by PyInstaller, files are extracted to sys._MEIPASS
+# When frozen by PyInstaller, data files live under sys._MEIPASS instead of __file__
 BASE_DIR = sys._MEIPASS if getattr(sys, "frozen", False) else os.path.dirname(os.path.abspath(__file__))
 
 app = FastAPI()
@@ -30,8 +30,9 @@ def index(request: Request):
 @app.post("/analyze")
 async def analyze(
     file: UploadFile = File(...),
-    checklist: str = Form(...),
+    checklist: str = Form(...),  # JSON string sent as a form field alongside the binary PDF
 ):
+    # Read the PDF into memory; it is never written to disk
     pdf_bytes = await file.read()
     document_text = extract_text_from_bytes(pdf_bytes)
 
@@ -40,6 +41,7 @@ async def analyze(
     except json.JSONDecodeError as e:
         raise HTTPException(status_code=422, detail=f"checklist JSON ไม่ถูกต้อง: {e}")
 
+    # Validate each section against the Pydantic schema before passing to the LLM
     try:
         sections = [ChecklistSection.model_validate(s) for s in raw]
     except ValidationError as e:
@@ -50,6 +52,7 @@ async def analyze(
     try:
         llm_result = await analyze_with_llm(document_text, checklist_data)
     except httpx.ConnectError:
+        # Ollama is not running or is unreachable on the expected port
         raise HTTPException(
             status_code=502,
             detail="ไม่สามารถเชื่อมต่อ Ollama ได้ — โปรดตรวจสอบว่า Ollama กำลังรันอยู่ที่ localhost:11434",
@@ -61,6 +64,7 @@ async def analyze(
 
     results = llm_result.get("results", [])
 
+    # Tally pass/fail counts and weighted scores across all sections
     total = 0
     passed = 0
     total_score = 0.0
@@ -82,7 +86,7 @@ async def analyze(
             "passed": passed,
             "failed": total - passed,
             "total_score": total_score,
-            "passed_score": passed_score
+            "passed_score": passed_score,
         },
         "similarity_score": score,
         "results": results,
@@ -91,6 +95,7 @@ async def analyze(
 
 @app.post("/export/excel")
 async def export_excel(payload: dict):
+    # Delegates workbook creation to the exporter module and returns a streaming response
     return build_excel_response(
         filename=payload.get("filename", "document"),
         results_data=payload.get("results", []),
@@ -101,7 +106,7 @@ async def export_excel(payload: dict):
 
 @app.get("/health")
 async def health():
-    """Check FastAPI + Ollama availability."""
+    # Probe Ollama's tag listing endpoint; any 200 response means the daemon is up
     ollama_ok = False
     try:
         async with httpx.AsyncClient(timeout=5) as client:

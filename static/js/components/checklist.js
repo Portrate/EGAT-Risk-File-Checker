@@ -1,3 +1,5 @@
+// Creates a pill-shaped chip element for a sub-item and appends it to the container.
+// Clicking the × icon removes the chip from the DOM.
 function addSubItemChip(container, text) {
     const chip = document.createElement('div');
     chip.className = 'sub-item-chip';
@@ -9,6 +11,7 @@ function addSubItemChip(container, text) {
     container.appendChild(chip);
 }
 
+// Binds the text input and + button inside a row so that pressing Enter or clicking the button converts the typed text into a chip and clears the input.
 function wireSubItemInput(row) {
     const container = row.querySelector('.sub-items-container');
     const input = row.querySelector('.sub-item-input');
@@ -20,18 +23,21 @@ function wireSubItemInput(row) {
             addSubItemChip(container, val);
             input.value = '';
         }
+        // Keep focus in the input so the user can type the next sub-item immediately.
         input.focus();
     }
 
     addBtn.addEventListener('click', commit);
     input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
-            e.preventDefault();
+            e.preventDefault(); // Prevent form submission inside a table cell
             commit();
         }
     });
 }
 
+// Returns the full HTML for a new checklist row.
+// Row number is shown in the index cell on the left.
 function buildNewRow(rowNumber) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -57,6 +63,9 @@ function buildNewRow(rowNumber) {
     return tr;
 }
 
+// Reads the current table state and returns a checklist array ready to send to /analyze.
+// Each entry contains a section title and an array of sub-item strings derived from chips.
+// Rows with no title and no chips are skipped.
 function getChecklist() {
     const rows = document.querySelectorAll('#checklist-body tr');
     const checklist = [];
@@ -79,12 +88,14 @@ function getChecklist() {
     return checklist;
 }
 
+// Bootstraps the checklist table: wires the pre-rendered first row from HTML, and sets up the "Add row" button to dynamically insert additional rows.
 function initChecklist() {
     const addRowBtn = document.getElementById('add-row-btn');
     const checklistBody = document.getElementById('checklist-body');
 
     if (!addRowBtn || !checklistBody) return;
 
+    // Re-numbers the index cells after a row is deleted to keep them sequential.
     function updateRowIndices() {
         checklistBody.querySelectorAll('tr').forEach((row, i) => {
             const indexCell = row.querySelector('.excel-row-index');
@@ -92,7 +103,7 @@ function initChecklist() {
         });
     }
 
-    // Wire the initial row (already in HTML)
+    // Wire the initial row
     const initialRow = checklistBody.querySelector('tr');
     if (initialRow) {
         wireSubItemInput(initialRow);

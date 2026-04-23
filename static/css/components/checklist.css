@@ -1,4 +1,4 @@
-/* checklist.css */
+/* checklist.css — editable requirements table */
 
 .checklist-card {
   background-color: var(--color-surface-container-lowest);
@@ -31,6 +31,7 @@
   opacity: 0.8;
 }
 
+/* Horizontal scroll for narrow viewports */
 .table-wrapper {
   overflow-x: auto;
 }
@@ -40,7 +41,7 @@
   border-collapse: collapse;
 }
 
-/* The no-divider rule from design system applied internally, but table cells might have ghost borders */
+/* Column header row */
 .excel-table th {
   background-color: var(--color-surface-container-low);
   padding: var(--spacing-2) var(--spacing-4);
@@ -54,6 +55,7 @@
   text-align: left;
 }
 
+/* Row number gutter — matches spreadsheet convention */
 .excel-row-index {
   background-color: var(--color-surface-container-low);
   width: 40px;
@@ -62,23 +64,18 @@
   font-size: 0.75rem;
   font-weight: 500;
   border-right: 1px solid var(--color-outline-variant);
-  /* "Ghost Border" logic */
 }
 
-/* Row Styling */
 .excel-table tbody tr {
   background-color: transparent;
-  /* Rely on surface-container-lowest */
   border-bottom: 1px solid rgba(169, 180, 185, 0.15);
-  /* Ghost border fallback */
 }
 
 .excel-cell {
   padding: var(--spacing-2) var(--spacing-4);
-  /* no right border inside body to keep it clean */
 }
 
-/* Input Fields & Modern Forms */
+/* Inputs look borderless until focused, then show a primary underline */
 .excel-cell input,
 .excel-cell textarea {
   width: 100%;
@@ -101,7 +98,7 @@
   background-color: var(--color-primary-container);
 }
 
-/* Chips & Status Indicators */
+/* Status */
 .status-chip {
   display: inline-flex;
   align-items: center;
@@ -121,6 +118,7 @@
   color: var(--color-on-secondary-container);
 }
 
+/* Icon-only button — turns red on hover as a delete */
 .btn-icon {
   color: var(--color-outline);
   transition: color 0.2s;
@@ -131,7 +129,7 @@
   color: var(--color-error);
 }
 
-/* Sub Item Chips */
+/* Sub-item chips — pill tags created when user confirms a sub-item */
 .sub-items-container {
   display: flex;
   flex-wrap: wrap;
@@ -158,6 +156,7 @@
   margin-right: 0.25rem;
 }
 
+/* × remove icon inside each chip */
 .remove-sub-item {
   font-size: 1rem;
   cursor: pointer;

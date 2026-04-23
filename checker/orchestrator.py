@@ -1,16 +1,21 @@
 import json
 import re
-
 import httpx
 
+# Ollama local API endpoint
 OLLAMA_URL = "http://localhost:11434/api/generate"
 MODEL = "gemma4:26b"
+
+# Separate read timeout (1200 s) because large documents take time to generate
 OLLAMA_TIMEOUT = httpx.Timeout(connect=30.0, read=1200.0, write=60.0, pool=10.0)
+
+# LLM generation options: fixed context window, short output, zero temperature for determinism
 OLLAMA_OPTIONS = {"num_ctx": 32768, "num_predict": 256, "temperature": 0, "repeat_penalty": 1.3, "repeat_last_n": 64}
 
 CHUNK_SIZE = 24_000      # characters per chunk sent to LLM
-CHUNK_OVERLAP = 2_000   # overlap between consecutive chunks to avoid missing content at boundaries
+CHUNK_OVERLAP = 2_000    # overlap between chunks to avoid missing content at boundaries
 
+# JSON format string embedded in every prompt so the LLM knows the expected output shape
 _JSON_FORMAT_EXAMPLE = """{
   "status": "pass หรือ fail",
   "reasoning_in_thai": "1-2 ประโยคสั้นๆ เป็นภาษาไทยเท่านั้น",
@@ -20,6 +25,7 @@ _JSON_FORMAT_EXAMPLE = """{
 
 
 def _build_single_prompt(document_text: str, section_title: str, requirement: str) -> str:
+    # Build a strict prompt for one checklist item against one document chunk
     return f"""คุณคือระบบตรวจสอบเอกสารที่เข้มงวด หน้าที่ของคุณคือตรวจสอบว่าเอกสารมีเนื้อหาครอบคลุมข้อกำหนดที่ระบุอย่างชัดเจนหรือไม่
 
 หัวข้อ: {section_title}
@@ -48,7 +54,7 @@ DOCUMENT:
 
 
 def _split_chunks(text: str) -> list[str]:
-    """Split document text into overlapping chunks of CHUNK_SIZE characters."""
+    # If the document fits in one chunk, skip splitting entirely
     if len(text) <= CHUNK_SIZE:
         return [text]
     chunks = []
@@ -58,22 +64,58 @@ def _split_chunks(text: str) -> list[str]:
         chunks.append(text[start:end])
         if end >= len(text):
             break
+        # Step back by CHUNK_OVERLAP so the next chunk re-reads the tail of the previous one
         start = end - CHUNK_OVERLAP
     return chunks
 
 
+async def analyze_with_llm(document_text: str, checklist: list[dict]) -> dict:
+    # Check each sub-item individually against the document.
+    print(f"[DEBUG] Checklist received: {json.dumps(checklist, ensure_ascii=False)}")
+
+    results = []
+    # Reuse a single HTTP client across all LLM calls to avoid connection overhead
+    async with httpx.AsyncClient() as client:
+        for section in checklist:
+            section_title = section.get("title", "")
+            items_out = []
+            for req_item in section.get("items", []):
+                requirement = req_item.get("name", "")
+                score = req_item.get("score", 0.0)
+                # Check this requirement and collect the result
+                check = await _check_single_item(client, document_text, section_title, requirement)
+                items_out.append({
+                    "requirement": requirement,
+                    "score": score,
+                    "status": check.get("status", "fail"),
+                    "reasoning": check.get("reasoning", ""),
+                    "evidence": check.get("evidence"),
+                })
+            results.append({"section": section_title, "items": items_out})
+
+    # Compute summary counts across all sections
+    total = sum(len(s["items"]) for s in results)
+    passed = sum(1 for s in results for it in s["items"] if it["status"] == "pass")
+    return {
+        "summary": {"total": total, "passed": passed, "failed": total - passed},
+        "results": results,
+    }
+
+
 def _extract_json(text: str) -> dict:
+    # Strip whitespace and unwrap markdown
     text = text.strip()
     fenced = re.search(r"```(?:json)?\s*([\s\S]+?)\s*```", text)
     if fenced:
         text = fenced.group(1)
 
+    # LLM returned valid JSON
     try:
         return json.loads(text)
     except json.JSONDecodeError:
         pass
 
-    # Truncated JSON fallback: extract fields individually via regex
+    # Extract fields individually via regex (happens when num_predict cuts the output before the closing brace)
     status_m = re.search(r'"status"\s*:\s*"(pass|fail)"', text)
     reasoning_m = re.search(r'"reasoning_in_thai"\s*:\s*"([^"]*)', text)
     evidence_m = re.search(r'"evidence"\s*:\s*"([^"]*)', text)
@@ -83,12 +125,13 @@ def _extract_json(text: str) -> dict:
         "status": status_m.group(1) if status_m else "fail",
         "reasoning_in_thai": reasoning_m.group(1) if reasoning_m else "",
         "evidence": evidence_m.group(1) if evidence_m else None,
+        # Infer found_in_document from status when the field itself is missing
         "found_in_document": found_m.group(1) == "true" if found_m else (status_m is not None and status_m.group(1) == "pass"),
     }
 
 
 def _sanitize_reasoning(text: str) -> str:
-    """Truncate at the first sign of repetition or artifact — char-level or word-level."""
+    # Cut at the first sign of repetition or artifact at char-level or word-level.
     if not text:
         return text
 
@@ -102,8 +145,7 @@ def _sanitize_reasoning(text: str) -> str:
     if artifact:
         return text[: artifact.start()].rstrip()
 
-    # 3. Word-level phrase repetition: any Thai word (4+ chars) appearing 3+ times,
-    #    or any bigram (8+ chars) appearing 2+ times — truncate before the 2nd/3rd hit.
+    # 3. Word-level phrase repetition: any Thai word (4+ chars) appearing 3+ times, or any bigram (8+ chars) appearing more than 2 times — Cut before the 2nd/3rd hit.
     words = text.split()
     word_positions: dict[str, list[int]] = {}
     pos = 0
@@ -126,10 +168,11 @@ def _sanitize_reasoning(text: str) -> str:
 
 
 def _is_thai(text: str) -> bool:
-    """Return True if text contains a meaningful amount of Thai characters."""
+    # Return True if text contains a meaningful amount of Thai characters.
     if not text:
         return True  # empty is fine, no retry needed
-    thai_chars = sum(1 for c in text if "\u0e00" <= c <= "\u0e7f")
+    # Count Unicode Thai block characters (U+0E00–U+0E7F)
+    thai_chars = sum(1 for c in text if "฀" <= c <= "๿")
     return thai_chars / len(text) >= 0.15  # at least 15% Thai script
 
 
@@ -139,6 +182,7 @@ async def _check_chunk(
     section_title: str,
     requirement: str,
 ) -> dict:
+    # Send one document chunk to Ollama and parse the LLM response
     prompt = _build_single_prompt(chunk, section_title, requirement)
     response = await client.post(
         OLLAMA_URL,
@@ -156,6 +200,8 @@ async def _check_chunk(
     raw = response.json()
     llm_text = raw.get("response", "")
     print(f"[DEBUG] done_reason={raw.get('done_reason')} ctx_used={raw.get('prompt_eval_count')} gen_tokens={raw.get('eval_count')} raw_response={repr(llm_text[:120])}")
+
+    # Parse LLM output and normalise the reasoning field name
     result = _extract_json(llm_text)
     if "reasoning_in_thai" in result:
         result["reasoning"] = _sanitize_reasoning(result.pop("reasoning_in_thai"))
@@ -186,12 +232,16 @@ async def _check_chunk(
         retry_response.raise_for_status()
         retry_text = retry_response.json().get("response", "")
         retry_result = _extract_json(retry_text)
+
+        # Normalise reasoning field from retry result
         if "reasoning_in_thai" in retry_result:
             retry_result["reasoning"] = _sanitize_reasoning(retry_result.pop("reasoning_in_thai"))
         elif "reasoning" not in retry_result:
             retry_result["reasoning"] = ""
         else:
             retry_result["reasoning"] = _sanitize_reasoning(retry_result["reasoning"])
+
+        # Only use the retry result if it actually came back in Thai
         if _is_thai(retry_result.get("reasoning", "")):
             result = retry_result
 
@@ -204,6 +254,8 @@ async def _check_single_item(
     section_title: str,
     requirement: str,
 ) -> dict:
+    # Check one checklist requirement across all document chunks
+    # Return immediately on the first "pass" no need to read further chunks
     chunks = _split_chunks(document_text)
     best = {"status": "fail", "reasoning": "", "evidence": None}
     try:
@@ -213,37 +265,8 @@ async def _check_single_item(
             print(f"[DEBUG] '{requirement[:40]}' chunk {i+1}/{len(chunks)} → {status}")
             if status == "pass":
                 return result
+        # No chunk returned "pass"; return the default fail result
         return best
     except Exception as e:
         print(f"[ERROR] Failed checking '{requirement[:40]}': {type(e).__name__}: {e}")
         return {"status": "fail", "reasoning": f"เกิดข้อผิดพลาด: {e}", "evidence": None}
-
-
-async def analyze_with_llm(document_text: str, checklist: list[dict]) -> dict:
-    """Check each sub-item individually against the document."""
-    print(f"[DEBUG] Checklist received: {json.dumps(checklist, ensure_ascii=False)}")
-
-    results = []
-    async with httpx.AsyncClient() as client:
-        for section in checklist:
-            section_title = section.get("title", "")
-            items_out = []
-            for req_item in section.get("items", []):
-                requirement = req_item.get("name", "")
-                score = req_item.get("score", 0.0)
-                check = await _check_single_item(client, document_text, section_title, requirement)
-                items_out.append({
-                    "requirement": requirement,
-                    "score": score,
-                    "status": check.get("status", "fail"),
-                    "reasoning": check.get("reasoning", ""),
-                    "evidence": check.get("evidence"),
-                })
-            results.append({"section": section_title, "items": items_out})
-
-    total = sum(len(s["items"]) for s in results)
-    passed = sum(1 for s in results for it in s["items"] if it["status"] == "pass")
-    return {
-        "summary": {"total": total, "passed": passed, "failed": total - passed},
-        "results": results,
-    }

@@ -4,6 +4,7 @@ function getSelectedFile() {
     return selectedFile;
 }
 
+// Sets up the upload card to accept files via click-to-browse or drag-and-drop.
 function initUpload() {
     const uploadCard = document.getElementById('upload-card');
     const fileInput = document.getElementById('pdf-input');
@@ -30,7 +31,7 @@ function initUpload() {
         }
     });
 
-    // Drag-and-drop
+    // Block browser's default behaviour (opening the file) for all drag events, then apply visual feedback and handle the drop.
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => {
         uploadCard.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); });
     });
@@ -41,11 +42,13 @@ function initUpload() {
     uploadCard.addEventListener('drop', e => {
         setHighlight(false);
         const files = e.dataTransfer.files;
+        // Only accept PDF files
         if (files.length > 0 && files[0].type === 'application/pdf') {
             setFile(files[0]);
         }
     });
 
+    // Toggles the dashed-border highlight colour while a file is dragged over the card.
     function setHighlight(on) {
         uploadCard.style.borderColor = on
             ? 'var(--color-primary)'
@@ -55,6 +58,7 @@ function initUpload() {
             : 'var(--color-surface-container-low)';
     }
 
+    // Saves the chosen file and updates the description text shown inside the card.
     function setFile(file) {
         selectedFile = file;
         if (uploadDesc) {
