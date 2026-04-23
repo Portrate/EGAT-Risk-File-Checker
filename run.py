@@ -63,20 +63,10 @@ def ensure_model(model_name: str) -> bool:
             creationflags=flags,
         )
         if model_name in result.stdout:
-            print(f"  [OK] โมเดล {model_name} พร้อมใช้งาน")
             return True
     except Exception:
         pass
-
-    print(f"  กำลังดาวน์โหลดโมเดล {model_name}...")
-    print(f"  (ครั้งแรกอาจใช้เวลา 10-20 นาที ขนาดประมาณ 18 GB)")
-    print()
-    try:
-        subprocess.run(["ollama", "pull", model_name], timeout=1800)
-        return True
-    except Exception as e:
-        print(f"  [ERROR] ดาวน์โหลดโมเดลไม่สำเร็จ: {e}")
-        return False
+    return False
 
 
 def open_browser_delayed(url: str, delay: float = 2.0):
@@ -89,37 +79,24 @@ def open_browser_delayed(url: str, delay: float = 2.0):
 def main():
     print_banner()
 
-    print("[1/3] ตรวจสอบ Ollama...")
-    if not check_ollama():
-        print()
-        print("  [ERROR] ไม่พบ Ollama ในเครื่อง")
-        print("  กรุณาติดตั้ง Ollama จาก https://ollama.com")
-        print()
-        input("กด Enter เพื่อปิด...")
-        sys.exit(1)
-    print("  [OK] พบ Ollama")
+    # --- ตรวจสอบ Local AI (Ollama) ---
+    local_ai_ready = False
+    if check_ollama():
+        if not is_ollama_running():
+            print("  กำลังเปิด Ollama server...")
+            is_running = start_ollama()
+        else:
+            is_running = True
 
-    print()
-    print("[2/3] ตรวจสอบ Ollama server...")
-    if not is_ollama_running():
-        print("  กำลังเปิด Ollama server...")
-        if not start_ollama():
-            print()
-            print("  [ERROR] ไม่สามารถเปิด Ollama ได้")
-            print("  กรุณาเปิด Ollama ด้วยตนเองก่อนรันโปรแกรม")
-            print()
-            input("กด Enter เพื่อปิด...")
-            sys.exit(1)
-    print("  [OK] Ollama server พร้อมใช้งาน")
+        if is_running and ensure_model("gemma4:26b"):
+            local_ai_ready = True
 
+    # --- สรุปสถานะ ---
     print()
-    print("[3/3] ตรวจสอบโมเดล AI...")
-    if not ensure_model("gemma4:26b"):
-        print()
-        print("  [ERROR] ไม่สามารถเตรียมโมเดลได้")
-        print()
-        input("กด Enter เพื่อปิด...")
-        sys.exit(1)
+    if local_ai_ready:
+        print("  Local AI (gemma4:26b) : พร้อมใช้งาน")
+    else:
+        print("  Local AI (gemma4:26b) : ไม่พร้อม — ใช้ Gemini หรือ OpenAI แทนได้ผ่าน UI")
 
     host = "127.0.0.1"
     port = 8000
