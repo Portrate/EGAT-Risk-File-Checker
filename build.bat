@@ -43,6 +43,7 @@ pyinstaller ^
     --hidden-import httpx ^
     --hidden-import jinja2 ^
     --hidden-import aiofiles ^
+    --hidden-import openpyxl ^
     --hidden-import pytesseract ^
     --hidden-import PIL ^
     --hidden-import PIL.Image ^
