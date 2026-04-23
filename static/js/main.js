@@ -262,7 +262,7 @@ function parseMarkdown(text) {
     return html;
 }
 
-// Grey out the verify button and show a spinning icon while waiting for a result.
+// Grey out the verify button and lock the entire UI while waiting for a result.
 function setLoading(on) {
     const btn = document.getElementById('verify-btn');
     if (!btn) return;
@@ -271,11 +271,43 @@ function setLoading(on) {
     const icon = btn.querySelector('.material-symbols-outlined');
     if (icon) {
         icon.textContent = on ? 'progress_activity' : 'verified';
-        if (on) {
-            icon.classList.add('spinning');
-        } else {
-            icon.classList.remove('spinning');
-        }
+        if (on) icon.classList.add('spinning');
+        else icon.classList.remove('spinning');
+    }
+
+    // Lock every interactive element outside the verify button
+    const selectors = [
+        '#upload-card',
+        '#pdf-input',
+        '#model-select',
+        '#api-key-input',
+        '#add-row-btn',
+        '#export-btn',
+        '#checklist-body input',
+        '#checklist-body button',
+    ];
+    selectors.forEach(sel => {
+        document.querySelectorAll(sel).forEach(el => {
+            if (el === btn) return;
+            if (on) {
+                el.dataset._wasDisabled = el.disabled ? '1' : '0';
+                el.disabled = true;
+                el.style.pointerEvents = 'none';
+                el.style.opacity = '0.5';
+            } else {
+                if (el.dataset._wasDisabled !== '1') el.disabled = false;
+                el.style.pointerEvents = '';
+                el.style.opacity = '';
+                delete el.dataset._wasDisabled;
+            }
+        });
+    });
+
+    // Overlay on the upload card (not a form element, so needs pointer-events)
+    const uploadCard = document.getElementById('upload-card');
+    if (uploadCard) {
+        uploadCard.style.pointerEvents = on ? 'none' : '';
+        uploadCard.style.opacity = on ? '0.5' : '';
     }
 }
 
@@ -371,6 +403,33 @@ async function exportToExcel() {
     }
 }
 
+let timerInterval = null;
+let startTime = 0;
+
+function startTimer() {
+    const timerDisplay = document.getElementById('timer-display');
+    const timeElapsed = document.getElementById('time-elapsed');
+    if (timerDisplay) timerDisplay.style.display = 'flex';
+    
+    startTime = Date.now();
+    
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const totalSeconds = Math.floor(elapsed / 1000);
+        const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+        const seconds = String(totalSeconds % 60).padStart(2, '0');
+        if (timeElapsed) timeElapsed.textContent = `${minutes}:${seconds}`;
+    }, 1000);
+}
+
+function stopTimer() {
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+}
+
 // Check that a file and checklist exist, then send them to /analyze and show the results.
 async function runVerification() {
     const file = getSelectedFile();
@@ -380,6 +439,7 @@ async function runVerification() {
     if (checklist.length === 0) { showError('Please add at least one checklist item.'); return; }
 
     setLoading(true);
+    startTimer();
     lastResult = null;
     const exportBtn = document.getElementById('export-btn');
     if (exportBtn) exportBtn.style.display = 'none';
@@ -387,6 +447,18 @@ async function runVerification() {
         const form = new FormData();
         form.append('file', file);
         form.append('checklist', JSON.stringify(checklist));
+
+        const modelSelect = document.getElementById('model-select');
+        const apiKeyInput = document.getElementById('api-key-input');
+        const selectedModel = modelSelect ? modelSelect.value : '';
+        if (selectedModel) form.append('model', selectedModel);
+
+        const isCloud = selectedModel.startsWith('gemini') || selectedModel.startsWith('gpt');
+        if (isCloud) {
+            const apiKey = apiKeyInput ? apiKeyInput.value.trim() : '';
+            if (!apiKey) { setLoading(false); stopTimer(); showError('กรุณากรอก API Key สำหรับโมเดลที่เลือก'); return; }
+            form.append('api_key', apiKey);
+        }
 
         const res = await fetch('/analyze', { method: 'POST', body: form });
         if (!res.ok) {
@@ -398,11 +470,28 @@ async function runVerification() {
         showError(err.message);
     } finally {
         setLoading(false);
+        stopTimer();
     }
+}
+
+function initModelSelect() {
+    const modelSelect = document.getElementById('model-select');
+    const apiKeyRow = document.getElementById('api-key-row');
+    if (!modelSelect || !apiKeyRow) return;
+
+    function updateApiKeyVisibility() {
+        const val = modelSelect.value;
+        const isCloud = val.startsWith('gemini') || val.startsWith('gpt');
+        apiKeyRow.style.display = isCloud ? 'block' : 'none';
+    }
+
+    modelSelect.addEventListener('change', updateApiKeyVisibility);
+    updateApiKeyVisibility();
 }
 
 // Start everything when the page loads
 initUpload();
 initChecklist();
+initModelSelect();
 document.getElementById('verify-btn').addEventListener('click', runVerification);
 document.getElementById('export-btn').addEventListener('click', exportToExcel);

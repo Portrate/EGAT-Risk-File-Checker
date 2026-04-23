@@ -31,6 +31,8 @@ def index(request: Request):
 async def analyze(
     file: UploadFile = File(...),
     checklist: str = Form(...),  # checklist sent as a JSON string together with the PDF
+    model: str = Form(default=""),
+    api_key: str = Form(default=""),
 ):
     # Keep the PDF in memory only — never save it to disk
     pdf_bytes = await file.read()
@@ -49,8 +51,10 @@ async def analyze(
 
     checklist_data = [{"title": s.title, "items": [{"name": i.name, "score": i.score} for i in s.items]} for s in sections]
 
+    selected_model = model or MODEL
+
     try:
-        llm_result = await analyze_with_llm(document_text, checklist_data)
+        llm_result = await analyze_with_llm(document_text, checklist_data, model=selected_model, api_key=api_key)
     except httpx.ConnectError:
         # Ollama is not running — ask the user to start it first
         raise HTTPException(

@@ -69,9 +69,9 @@ def _split_chunks(text: str) -> list[str]:
     return chunks
 
 
-async def analyze_with_llm(document_text: str, checklist: list[dict]) -> dict:
+async def analyze_with_llm(document_text: str, checklist: list[dict], model: str = MODEL, api_key: str = "") -> dict:
     # Check each sub-item individually against the document.
-    print(f"[DEBUG] Checklist received: {json.dumps(checklist, ensure_ascii=False)}")
+    print(f"[DEBUG] Model: {model} | Checklist received: {json.dumps(checklist, ensure_ascii=False)}")
 
     results = []
     # Reuse a single HTTP client across all LLM calls to avoid connection overhead
@@ -83,7 +83,7 @@ async def analyze_with_llm(document_text: str, checklist: list[dict]) -> dict:
                 requirement = req_item.get("name", "")
                 score = req_item.get("score", 0.0)
                 # Check this requirement and collect the result
-                check = await _check_single_item(client, document_text, section_title, requirement)
+                check = await _check_single_item(client, document_text, section_title, requirement, model=model, api_key=api_key)
                 items_out.append({
                     "requirement": requirement,
                     "score": score,
@@ -176,18 +176,19 @@ def _is_thai(text: str) -> bool:
     return thai_chars / len(text) >= 0.15  # at least 15% Thai script
 
 
-async def _check_chunk(
+async def _check_chunk_ollama(
     client: httpx.AsyncClient,
     chunk: str,
     section_title: str,
     requirement: str,
+    model: str,
 ) -> dict:
     # Send one document chunk to Ollama and parse the LLM response
     prompt = _build_single_prompt(chunk, section_title, requirement)
     response = await client.post(
         OLLAMA_URL,
         json={
-            "model": MODEL,
+            "model": model,
             "system": "คุณตอบเป็นภาษาไทยเท่านั้น ห้ามใช้ภาษาอังกฤษในคำอธิบาย",
             "prompt": prompt,
             "stream": False,
@@ -201,7 +202,6 @@ async def _check_chunk(
     llm_text = raw.get("response", "")
     print(f"[DEBUG] done_reason={raw.get('done_reason')} ctx_used={raw.get('prompt_eval_count')} gen_tokens={raw.get('eval_count')} raw_response={repr(llm_text[:120])}")
 
-    # Parse LLM output and normalise the reasoning field name
     result = _extract_json(llm_text)
     if "reasoning_in_thai" in result:
         result["reasoning"] = _sanitize_reasoning(result.pop("reasoning_in_thai"))
@@ -220,7 +220,7 @@ async def _check_chunk(
         retry_response = await client.post(
             OLLAMA_URL,
             json={
-                "model": MODEL,
+                "model": model,
                 "system": "ห้ามตอบเป็นภาษาอังกฤษ ตอบเป็นภาษาไทยเท่านั้น",
                 "prompt": retry_prompt,
                 "stream": False,
@@ -233,7 +233,6 @@ async def _check_chunk(
         retry_text = retry_response.json().get("response", "")
         retry_result = _extract_json(retry_text)
 
-        # Normalise reasoning field from retry result
         if "reasoning_in_thai" in retry_result:
             retry_result["reasoning"] = _sanitize_reasoning(retry_result.pop("reasoning_in_thai"))
         elif "reasoning" not in retry_result:
@@ -241,11 +240,102 @@ async def _check_chunk(
         else:
             retry_result["reasoning"] = _sanitize_reasoning(retry_result["reasoning"])
 
-        # Only use the retry result if it actually came back in Thai
         if _is_thai(retry_result.get("reasoning", "")):
             result = retry_result
 
     return result
+
+
+GEMINI_TIMEOUT = httpx.Timeout(connect=30.0, read=120.0, write=60.0, pool=10.0)
+
+
+async def _check_chunk_gemini(
+    client: httpx.AsyncClient,
+    chunk: str,
+    section_title: str,
+    requirement: str,
+    model: str,
+    api_key: str,
+) -> dict:
+    prompt = _build_single_prompt(chunk, section_title, requirement)
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+    payload = {
+        "system_instruction": {"parts": [{"text": "คุณตอบเป็นภาษาไทยเท่านั้น ห้ามใช้ภาษาอังกฤษในคำอธิบาย"}]},
+        "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+        "generationConfig": {"temperature": 0, "responseMimeType": "application/json"},
+    }
+    response = await client.post(url, json=payload, timeout=GEMINI_TIMEOUT)
+    response.raise_for_status()
+    data = response.json()
+    llm_text = data["candidates"][0]["content"]["parts"][0]["text"]
+    print(f"[DEBUG] Gemini raw_response={repr(llm_text[:120])}")
+
+    result = _extract_json(llm_text)
+    if "reasoning_in_thai" in result:
+        result["reasoning"] = _sanitize_reasoning(result.pop("reasoning_in_thai"))
+    elif "reasoning" not in result:
+        result["reasoning"] = ""
+    else:
+        result["reasoning"] = _sanitize_reasoning(result["reasoning"])
+    return result
+
+
+OPENAI_TIMEOUT = httpx.Timeout(connect=30.0, read=120.0, write=60.0, pool=10.0)
+
+
+async def _check_chunk_openai(
+    client: httpx.AsyncClient,
+    chunk: str,
+    section_title: str,
+    requirement: str,
+    model: str,
+    api_key: str,
+) -> dict:
+    prompt = _build_single_prompt(chunk, section_title, requirement)
+    url = "https://api.openai.com/v1/chat/completions"
+    payload = {
+        "model": model,
+        "temperature": 0,
+        "response_format": {"type": "json_object"},
+        "messages": [
+            {"role": "system", "content": "คุณตอบเป็นภาษาไทยเท่านั้น ห้ามใช้ภาษาอังกฤษในคำอธิบาย"},
+            {"role": "user", "content": prompt},
+        ],
+    }
+    response = await client.post(
+        url,
+        json=payload,
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+        timeout=OPENAI_TIMEOUT,
+    )
+    response.raise_for_status()
+    data = response.json()
+    llm_text = data["choices"][0]["message"]["content"]
+    print(f"[DEBUG] OpenAI raw_response={repr(llm_text[:120])}")
+
+    result = _extract_json(llm_text)
+    if "reasoning_in_thai" in result:
+        result["reasoning"] = _sanitize_reasoning(result.pop("reasoning_in_thai"))
+    elif "reasoning" not in result:
+        result["reasoning"] = ""
+    else:
+        result["reasoning"] = _sanitize_reasoning(result["reasoning"])
+    return result
+
+
+async def _check_chunk(
+    client: httpx.AsyncClient,
+    chunk: str,
+    section_title: str,
+    requirement: str,
+    model: str = MODEL,
+    api_key: str = "",
+) -> dict:
+    if model.startswith("gemini"):
+        return await _check_chunk_gemini(client, chunk, section_title, requirement, model, api_key)
+    if model.startswith("gpt"):
+        return await _check_chunk_openai(client, chunk, section_title, requirement, model, api_key)
+    return await _check_chunk_ollama(client, chunk, section_title, requirement, model)
 
 
 async def _check_single_item(
@@ -253,6 +343,8 @@ async def _check_single_item(
     document_text: str,
     section_title: str,
     requirement: str,
+    model: str = MODEL,
+    api_key: str = "",
 ) -> dict:
     # Check one checklist requirement across all document chunks
     # Return immediately on the first "pass" no need to read further chunks
@@ -260,7 +352,7 @@ async def _check_single_item(
     best = {"status": "fail", "reasoning": "", "evidence": None}
     try:
         for i, chunk in enumerate(chunks):
-            result = await _check_chunk(client, chunk, section_title, requirement)
+            result = await _check_chunk(client, chunk, section_title, requirement, model=model, api_key=api_key)
             status = result.get("status", "fail")
             print(f"[DEBUG] '{requirement[:40]}' chunk {i+1}/{len(chunks)} → {status}")
             if status == "pass":
