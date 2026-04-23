@@ -57,7 +57,7 @@ input, button, textarea, select {
 /* Typography Scale */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-headline);
-  font-weight: 800; /* Extrabold from the original tailwind */
+  font-weight: 800; /* extra bold */
   letter-spacing: -0.02em;
 }
 

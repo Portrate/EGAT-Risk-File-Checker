@@ -1,5 +1,5 @@
-// Creates a pill-shaped chip element for a sub-item and appends it to the container.
-// Clicking the × icon removes the chip from the DOM.
+// Create a small tag (chip) for a sub-item and add it to the list.
+// Clicking × on the chip deletes it.
 function addSubItemChip(container, text) {
     const chip = document.createElement('div');
     chip.className = 'sub-item-chip';
@@ -11,7 +11,7 @@ function addSubItemChip(container, text) {
     container.appendChild(chip);
 }
 
-// Binds the text input and + button inside a row so that pressing Enter or clicking the button converts the typed text into a chip and clears the input.
+// Wire up the text box and + button so pressing Enter or clicking + turns the text into a chip.
 function wireSubItemInput(row) {
     const container = row.querySelector('.sub-items-container');
     const input = row.querySelector('.sub-item-input');
@@ -23,21 +23,20 @@ function wireSubItemInput(row) {
             addSubItemChip(container, val);
             input.value = '';
         }
-        // Keep focus in the input so the user can type the next sub-item immediately.
+        // Keep the cursor in the input so the user can type the next item right away.
         input.focus();
     }
 
     addBtn.addEventListener('click', commit);
     input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
-            e.preventDefault(); // Prevent form submission inside a table cell
+            e.preventDefault(); // Stop Enter from submitting the form
             commit();
         }
     });
 }
 
-// Returns the full HTML for a new checklist row.
-// Row number is shown in the index cell on the left.
+// Build the HTML for a new checklist row. The row number appears in the left cell.
 function buildNewRow(rowNumber) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -63,9 +62,8 @@ function buildNewRow(rowNumber) {
     return tr;
 }
 
-// Reads the current table state and returns a checklist array ready to send to /analyze.
-// Each entry contains a section title and an array of sub-item strings derived from chips.
-// Rows with no title and no chips are skipped.
+// Read all rows in the table and return a checklist array to send to /analyze.
+// Empty rows (no title and no chips) are skipped.
 function getChecklist() {
     const rows = document.querySelectorAll('#checklist-body tr');
     const checklist = [];
@@ -88,14 +86,15 @@ function getChecklist() {
     return checklist;
 }
 
-// Bootstraps the checklist table: wires the pre-rendered first row from HTML, and sets up the "Add row" button to dynamically insert additional rows.
+// Set up the checklist table: hook up the first row that is already in the HTML,
+// and make the "Add row" button create new rows.
 function initChecklist() {
     const addRowBtn = document.getElementById('add-row-btn');
     const checklistBody = document.getElementById('checklist-body');
 
     if (!addRowBtn || !checklistBody) return;
 
-    // Re-numbers the index cells after a row is deleted to keep them sequential.
+    // Update the row numbers after a row is deleted.
     function updateRowIndices() {
         checklistBody.querySelectorAll('tr').forEach((row, i) => {
             const indexCell = row.querySelector('.excel-row-index');

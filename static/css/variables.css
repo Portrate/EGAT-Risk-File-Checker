@@ -87,6 +87,6 @@
   --radius-full: 9999px;
 
   /* Shadows */
-  --shadow-ambient: 0 12px 32px -4px rgba(42, 52, 57, 0.08); /* 0.08 alpha of on-surface */
+  --shadow-ambient: 0 12px 32px -4px rgba(42, 52, 57, 0.08); /* soft shadow using the text colour at low opacity */
   --shadow-input-hover: 0 2px 4px rgba(42, 52, 57, 0.04);
 }

@@ -1,6 +1,5 @@
-// selectedFile: the PDF that user picked, read by runVerification and exportToExcel.
-// lastResult:   the last successful /analyze response; kept so the export button
-//               can resend it without re-running the analysis.
+// selectedFile: the PDF the user chose.
+// lastResult:   the last result from /analyze, saved so the export button can use it again.
 let selectedFile = null;
 let lastResult = null;
 
@@ -221,11 +220,10 @@ function initChecklist() {
     }
 }
 
-// Markdown renderer
-// The LLM returns reasoning text that may contain basic markdown.
-// These helpers convert it to safe HTML for display in the results panel.
+// The AI sometimes returns text with simple markdown formatting.
+// These helpers turn that text into safe HTML to show in the results panel.
 
-// Encodes special HTML characters to prevent XSS from LLM output.
+// Replace special characters so the browser does not treat them as HTML tags.
 function escapeHtml(text) {
     return text
         .replace(/&/g, '&amp;')
@@ -234,7 +232,7 @@ function escapeHtml(text) {
         .replace(/"/g, '&quot;');
 }
 
-// Handles **bold** and *italic* within a single line.
+// Turn **bold** and *italic* markers into real HTML tags.
 function inlineMarkdown(text) {
     text = escapeHtml(text);
     text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
@@ -242,8 +240,8 @@ function inlineMarkdown(text) {
     return text;
 }
 
-// Converts a multi-line markdown string to HTML.
-// Supports bullet lists (-, •, *) and inline bold/italic, everything else renders as plain text. A minimal subset is intentional, the LLM rarely produces anything more complex.
+// Convert a multi-line text to HTML. Handles bullet lists and bold/italic only,
+// since the AI rarely uses anything more complex.
 function parseMarkdown(text) {
     if (!text) return '';
     const lines = text.split('\n');
@@ -264,8 +262,7 @@ function parseMarkdown(text) {
     return html;
 }
 
-// Verification UI helpers
-// Disables the verify button and swaps its icon to a spinner while the request is in-flight, then restores it on completion.
+// Grey out the verify button and show a spinning icon while waiting for a result.
 function setLoading(on) {
     const btn = document.getElementById('verify-btn');
     if (!btn) return;
@@ -282,7 +279,7 @@ function setLoading(on) {
     }
 }
 
-// Replaces the result list with a single error card so the user sees feedback inline rather than in an alert dialog.
+// Show an error message inside the results area instead of a popup alert.
 function showError(msg) {
     const container = document.getElementById('result-items');
     if (container) {
@@ -295,8 +292,8 @@ function showError(msg) {
     }
 }
 
-// Renders the /analyze response into the results panel.
-// For passed items the evidence quote is shown; for failed items the reasoning explains what was missing. Score is displayed numerically alongside each item.
+// Fill the results panel with pass/fail cards from the /analyze response.
+// Passed items show the evidence quote; failed items show why they were missing.
 function renderResults(data) {
     const container = document.getElementById('result-items');
     const scoreEl   = document.getElementById('score-value');
@@ -334,12 +331,12 @@ function renderResults(data) {
     }
 
     lastResult = data;
-    // Show the export button only after a successful result is rendered.
+    // Only show the export button after results are ready.
     if (exportBtn) exportBtn.style.display = 'inline-flex';
 }
 
-// POSTs the last result to /export/excel and triggers a browser download.
-// The filename is read from the Content-Disposition header returned by the server so Thai characters in the filename are decoded correctly (RFC 5987 UTF-8 encoding).
+// Send the last result to /export/excel and start a file download in the browser.
+// The filename comes from the server header so Thai characters are handled correctly.
 async function exportToExcel() {
     if (!lastResult) return;
     const exportBtn = document.getElementById('export-btn');
@@ -360,7 +357,7 @@ async function exportToExcel() {
         let fname = 'ผลการตรวจสอบ.xlsx';
         const match = disposition.match(/filename\*=UTF-8''(.+)/i);
         if (match) fname = decodeURIComponent(match[1]);
-        // Create a temporary <a> to trigger the download, then release the object URL.
+        // Use a hidden <a> tag to start the download, then free the temporary URL.
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -374,7 +371,7 @@ async function exportToExcel() {
     }
 }
 
-// Validates inputs, builds a multipart form with the PDF and checklist JSON, calls /analyze, and hands the response off to renderResults.
+// Check that a file and checklist exist, then send them to /analyze and show the results.
 async function runVerification() {
     const file = getSelectedFile();
     if (!file) { showError('Please upload a PDF document first.'); return; }
@@ -404,7 +401,7 @@ async function runVerification() {
     }
 }
 
-// Bootstrap
+// Start everything when the page loads
 initUpload();
 initChecklist();
 document.getElementById('verify-btn').addEventListener('click', runVerification);

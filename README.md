@@ -187,7 +187,7 @@ main.py  →  pdf_extractor.extract_text_from_bytes()
 
 ---
 
-### Key Files Explained
+### Files Explained
 
 **`run.py`** — Startup launcher used by the `.exe` and `start.bat`. Before starting uvicorn it:
 1. Checks that `ollama` binary exists in PATH
