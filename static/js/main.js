@@ -433,11 +433,18 @@ function stopTimer() {
 
 // Check that a file and checklist exist, then send them to /analyze and show the results.
 async function runVerification() {
-    const file = getSelectedFile();
-    if (!file) { showError('Please upload a PDF document first.'); return; }
-
     const checklist = getChecklist();
-    if (checklist.length === 0) { showError('Please add at least one checklist item.'); return; }
+    if (checklist.length === 0) { showError('กรุณาเพิ่มหัวข้อหลักและรายการย่อยอย่างน้อย 1 รายการ'); return; }
+
+    const emptySection = checklist.find(s => s.items.length === 0);
+    if (emptySection) {
+        const title = emptySection.title || '(ไม่มีชื่อหัวข้อ)';
+        showError(`หัวข้อ "${title}" ยังไม่มีรายการย่อย กรุณาเพิ่มรายการย่อยอย่างน้อย 1 รายการ`);
+        return;
+    }
+
+    const file = getSelectedFile();
+    if (!file) { showError('กรุณาอัปโหลดไฟล์ PDF ก่อน'); return; }
 
     setLoading(true);
     startTimer();

@@ -3,7 +3,9 @@ import os
 import sys
 
 import httpx
+import pymupdf
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.encoders import jsonable_encoder
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
@@ -36,7 +38,10 @@ async def analyze(
 ):
     # Keep the PDF in memory only — never save it to disk
     pdf_bytes = await file.read()
-    document_text = extract_text_from_bytes(pdf_bytes)
+    try:
+        document_text = extract_text_from_bytes(pdf_bytes)
+    except pymupdf.FileDataError:
+        raise HTTPException(status_code=422, detail="ไฟล์ที่อัปโหลดไม่ใช่ PDF ที่ถูกต้อง หรือไฟล์เสียหาย")
 
     try:
         raw = json.loads(checklist)
@@ -47,7 +52,8 @@ async def analyze(
     try:
         sections = [ChecklistSection.model_validate(s) for s in raw]
     except ValidationError as e:
-        raise HTTPException(status_code=422, detail=e.errors())
+        # jsonable_encoder strips ValueError objects that pydantic puts in ctx.error
+        raise HTTPException(status_code=422, detail=jsonable_encoder(e.errors()))
 
     checklist_data = [{"title": s.title, "items": [{"name": i.name, "score": i.score} for i in s.items]} for s in sections]
 
