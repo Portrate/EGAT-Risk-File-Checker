@@ -31,7 +31,7 @@ except ImportError:
     )
 
 # Minimum selectable-text length before we treat a page as image-only.
-_OCR_THRESHOLD = 50
+_OCR_THRESHOLD = 100
 # Render DPI for OCR — higher = better accuracy but work slower.
 _OCR_DPI = 200
 # Tesseract language string. Thai + English.

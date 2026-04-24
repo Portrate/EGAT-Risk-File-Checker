@@ -176,7 +176,7 @@ Browser
   ▼
 main.py  →  pdf_extractor.extract_text_from_bytes()
               │  pymupdf reads each page
-              │  if page text < 50 chars → OCR via Tesseract (thai+english)
+              │  if page text < 100 chars → OCR via Tesseract (thai+english)
               │  output: plain text
               ▼
          orchestrator.analyze_with_llm()
@@ -208,7 +208,7 @@ main.py  →  pdf_extractor.extract_text_from_bytes()
 - `POST /export/excel` — receives the already computed results from the browser and streams back to `.xlsx` file
 - `GET /health` — returns Ollama reachability status and the configured model name
 
-**`checker/pdf_extractor.py`** — Uses `pymupdf` (`fitz`) to read each page. If a page has lower than 50 characters of selectable text it is treated as a scanned image and passed through Tesseract OCR at 200 DPI with `thai and english` language. Output is joined as `[หน้า N]\n<text>` blocks.
+**`checker/pdf_extractor.py`** — Uses `pymupdf` (`fitz`) to read each page. If a page has lower than 100 characters of selectable text it is treated as a scanned image and passed through Tesseract OCR at 200 DPI with `thai and english` language. Output is joined as `[หน้า N]\n<text>` blocks.
 
 **`checker/orchestrator.py`** — Core LLM logic:
 - `_split_chunks()` — splits the full document text into 24,000 character chunks with 2,000 character overlap so content near chunk boundaries is not missed

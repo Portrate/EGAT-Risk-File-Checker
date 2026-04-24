@@ -285,6 +285,7 @@ function setLoading(on) {
         '#export-btn',
         '#checklist-body input',
         '#checklist-body button',
+        '#checklist-body .remove-sub-item',
     ];
     selectors.forEach(sel => {
         document.querySelectorAll(sel).forEach(el => {

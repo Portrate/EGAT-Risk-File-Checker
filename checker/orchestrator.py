@@ -1,3 +1,4 @@
+import asyncio
 import json
 import re
 import httpx
@@ -293,22 +294,65 @@ async def _check_chunk_openai(
 ) -> dict:
     prompt = _build_single_prompt(chunk, section_title, requirement)
     url = "https://api.openai.com/v1/chat/completions"
+    # gpt-4o-mini and newer models support structured outputs (json_schema);
+    # older models only support json_object — use json_schema for gpt-4o / gpt-5 and above.
+    use_structured = any(model.startswith(p) for p in ("gpt-4o", "gpt-5", "o1", "o3"))
+    response_format = (
+        {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "compliance_check",
+                "strict": True,
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "status": {"type": "string", "enum": ["pass", "fail"]},
+                        "reasoning_in_thai": {"type": "string"},
+                        "evidence": {"type": ["string", "null"]},
+                        "found_in_document": {"type": "boolean"},
+                    },
+                    "required": ["status", "reasoning_in_thai", "evidence", "found_in_document"],
+                    "additionalProperties": False,
+                },
+            },
+        }
+        if use_structured
+        else {"type": "json_object"}
+    )
+    # gpt-5 and o-series models only accept temperature=1 (their default); omit the field for those.
+    supports_temperature = not any(model.startswith(p) for p in ("gpt-5", "o1", "o3"))
     payload = {
         "model": model,
-        "temperature": 0,
-        "response_format": {"type": "json_object"},
+        "response_format": response_format,
         "messages": [
-            {"role": "system", "content": "คุณตอบเป็นภาษาไทยเท่านั้น ห้ามใช้ภาษาอังกฤษในคำอธิบาย"},
+            {"role": "system", "content": "คุณตอบเป็นภาษาไทยเท่านั้น ห้ามใช้ภาษาอังกฤษในคำอธิบาย ตอบเป็น JSON เท่านั้น"},
             {"role": "user", "content": prompt},
         ],
+        **({"temperature": 0} if supports_temperature else {}),
     }
-    response = await client.post(
-        url,
-        json=payload,
-        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-        timeout=OPENAI_TIMEOUT,
-    )
-    response.raise_for_status()
+    # Retry with exponential backoff on 429 rate-limit responses
+    max_retries = 5
+    for attempt in range(max_retries):
+        response = await client.post(
+            url,
+            json=payload,
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            timeout=OPENAI_TIMEOUT,
+        )
+        if response.status_code == 429:
+            wait = 2 ** attempt  # 1, 2, 4, 8, 16 seconds
+            retry_after = response.headers.get("Retry-After")
+            if retry_after:
+                wait = max(wait, int(retry_after))
+            print(f"[WARN] OpenAI 429 rate limit, waiting {wait}s (attempt {attempt + 1}/{max_retries})")
+            await asyncio.sleep(wait)
+            continue
+        if response.status_code >= 400:
+            print(f"[ERROR] OpenAI {response.status_code}: {response.text}")
+            response.raise_for_status()
+        break
+    else:
+        response.raise_for_status()
     data = response.json()
     llm_text = data["choices"][0]["message"]["content"]
     print(f"[DEBUG] OpenAI raw_response={repr(llm_text[:120])}")
