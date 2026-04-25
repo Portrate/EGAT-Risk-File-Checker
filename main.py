@@ -24,9 +24,23 @@ app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), na
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
 
+_LOCAL_MODELS = [
+    {"value": "gemma4:26b", "label": "Gemma 4 27B (Local)"},
+]
+
+
 @app.get("/")
-def index(request: Request):
-    return templates.TemplateResponse(request, "index.html")
+async def index(request: Request):
+    installed: list[str] = []
+    try:
+        async with httpx.AsyncClient(timeout=3) as client:
+            r = await client.get("http://localhost:11434/api/tags")
+            if r.status_code == 200:
+                installed = [m["name"] for m in r.json().get("models", [])]
+    except Exception:
+        pass
+    local_models = [m for m in _LOCAL_MODELS if m["value"] in installed]
+    return templates.TemplateResponse(request, "index.html", {"local_models": local_models})
 
 
 @app.post("/analyze")

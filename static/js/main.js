@@ -436,10 +436,12 @@ async function runVerification() {
     const checklist = getChecklist();
     if (checklist.length === 0) { showError('กรุณาเพิ่มหัวข้อหลักและรายการย่อยอย่างน้อย 1 รายการ'); return; }
 
+    const noTitle = checklist.find(s => !s.title);
+    if (noTitle) { showError('กรุณากรอกชื่อหัวข้อหลักให้ครบทุกแถว'); return; }
+
     const emptySection = checklist.find(s => s.items.length === 0);
     if (emptySection) {
-        const title = emptySection.title || '(ไม่มีชื่อหัวข้อ)';
-        showError(`หัวข้อ "${title}" ยังไม่มีรายการย่อย กรุณาเพิ่มรายการย่อยอย่างน้อย 1 รายการ`);
+        showError(`หัวข้อ "${emptySection.title}" ยังไม่มีรายการย่อย กรุณาเพิ่มรายการย่อยอย่างน้อย 1 รายการ`);
         return;
     }
 
@@ -470,12 +472,27 @@ async function runVerification() {
 
         const res = await fetch('/analyze', { method: 'POST', body: form });
         if (!res.ok) {
-            const detail = await res.json().catch(() => ({ detail: res.statusText }));
-            throw new Error(detail.detail || res.statusText);
+            const data = await res.json().catch(() => ({}));
+            // Backend already returns Thai messages as a string; pydantic 422 returns an array — replace with a friendly Thai message
+            let msg;
+            if (typeof data.detail === 'string') {
+                msg = data.detail;
+            } else if (res.status === 422) {
+                msg = 'ข้อมูลรายการตรวจสอบไม่ถูกต้อง กรุณาตรวจสอบหัวข้อหลักและรายการย่อยให้ครบถ้วน';
+            } else if (res.status === 502) {
+                msg = 'ไม่สามารถเชื่อมต่อกับโมเดล AI ได้ กรุณาตรวจสอบสถานะของ Ollama หรือ API Key';
+            } else {
+                msg = 'เกิดข้อผิดพลาดในการตรวจสอบเอกสาร กรุณาลองใหม่อีกครั้ง';
+            }
+            throw new Error(msg);
         }
         renderResults(await res.json());
     } catch (err) {
-        showError(err.message);
+        // Network/parse failures fall through here — show a generic Thai message rather than raw exception text
+        const msg = err.message && /[฀-๿]/.test(err.message)
+            ? err.message
+            : 'เกิดข้อผิดพลาดในการตรวจสอบเอกสาร กรุณาลองใหม่อีกครั้ง';
+        showError(msg);
     } finally {
         setLoading(false);
         stopTimer();
