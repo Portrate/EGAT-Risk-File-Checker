@@ -403,6 +403,9 @@ async def _check_single_item(
                 return result
         # No chunk returned "pass"; return the default fail result
         return best
+    except httpx.HTTPStatusError:
+        # Let HTTP errors from the AI provider propagate so main.py can return a proper error response
+        raise
     except Exception as e:
         print(f"[ERROR] Failed checking '{requirement[:40]}': {type(e).__name__}: {e}")
         return {"status": "fail", "reasoning": f"เกิดข้อผิดพลาด: {e}", "evidence": None}

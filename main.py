@@ -79,10 +79,23 @@ async def analyze(
         # Ollama is not running — ask the user to start it first
         raise HTTPException(
             status_code=502,
-            detail="ไม่สามารถเชื่อมต่อ Ollama ได้ — โปรดตรวจสอบว่า Ollama กำลังรันอยู่ที่ localhost:11434",
+            detail="ไม่สามารถเชื่อมต่อ Ollama ได้ โปรดตรวจสอบว่า Ollama กำลังรันอยู่ที่ localhost:11434",
         )
     except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=502, detail=f"Ollama ตอบกลับด้วย error: {e.response.status_code}")
+        code = e.response.status_code
+        if code == 400:
+            detail = "คำขอไม่ถูกต้อง โปรดตรวจสอบชื่อโมเดลและรูปแบบคำขอ (400 Bad Request)"
+        elif code == 401:
+            detail = "API Key ไม่ถูกต้องหรือหมดอายุ โปรดตรวจสอบ API Key อีกครั้ง (401 Unauthorized)"
+        elif code == 403:
+            detail = "API Key ไม่มีสิทธิ์เข้าถึงโมเดลนี้ โปรดตรวจสอบสิทธิ์การใช้งาน (403 Forbidden)"
+        elif code == 404:
+            detail = "ไม่พบโมเดลที่เลือก โปรดตรวจสอบชื่อโมเดลให้ถูกต้อง (404 Not Found)"
+        elif code == 429:
+            detail = "เกินขีดจำกัดการใช้งาน API โปรดรอสักครู่แล้วลองใหม่อีกครั้ง (429 Too Many Requests)"
+        else:
+            detail = f"เกิดข้อผิดพลาดจาก AI provider (HTTP {code})"
+        raise HTTPException(status_code=502, detail=detail)
     except (json.JSONDecodeError, KeyError, ValueError) as e:
         raise HTTPException(status_code=500, detail=f"แปลงผลลัพธ์จาก LLM ไม่ได้: {e}")
 
