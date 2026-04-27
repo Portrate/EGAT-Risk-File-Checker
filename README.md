@@ -196,7 +196,7 @@ main.py  →  pdf_extractor.extract_text_from_bytes()
 
 ### Files Explained
 
-**`run.py`** — ไฟล์สำหรับเปิดโปรแกรม ใช้โดย `.exe` and `start.bat`.
+**`run.py`** — ไฟล์สำหรับเปิดโปรแกรม ใช้โดย `.exe` และ `start.bat`.
 1. ตรวจสอบว่ามีคำสั่ง `ollama` อยู่ใน PATH หรือไม่ (ข้ามหากไม่พบ)
 2. ตรวจสอบ `localhost:11434` ว่า Ollama กำลังทำงานอยู่ ถ้าไม่ได้ทำงานจะสั่ง ollama serve
 3. ตรวจสอบว่าดาวน์โหลด `gemma4:26b` ไว้แล้วหรือไม่ (ไม่ดาวน์โหลดอัตโนมัติ)
