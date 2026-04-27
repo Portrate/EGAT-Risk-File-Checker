@@ -511,12 +511,118 @@ function initModelSelect() {
     }
 
     modelSelect.addEventListener('change', updateApiKeyVisibility);
+    loadCustomModels();
     updateApiKeyVisibility();
+}
+
+// Custom models stored as [{ provider: 'openai'|'gemini', value, label }]
+const CUSTOM_MODELS_KEY = 'customModels';
+
+function readCustomModels() {
+    try {
+        const raw = localStorage.getItem(CUSTOM_MODELS_KEY);
+        return raw ? JSON.parse(raw) : [];
+    } catch {
+        return [];
+    }
+}
+
+function writeCustomModels(list) {
+    localStorage.setItem(CUSTOM_MODELS_KEY, JSON.stringify(list));
+}
+
+function loadCustomModels() {
+    const modelSelect = document.getElementById('model-select');
+    if (!modelSelect) return;
+
+    // Clear any previously injected custom <option>s
+    modelSelect.querySelectorAll('option[data-custom="1"]').forEach(o => o.remove());
+
+    const openaiGroup = document.getElementById('openai-group');
+    const geminiGroup = document.getElementById('gemini-group');
+    const customs = readCustomModels();
+
+    for (const m of customs) {
+        const opt = document.createElement('option');
+        opt.value = m.value;
+        opt.textContent = `${m.label || m.value} (เพิ่มเอง)`;
+        opt.dataset.custom = '1';
+        const target = m.provider === 'gemini' ? geminiGroup : openaiGroup;
+        if (target) target.appendChild(opt);
+    }
+}
+
+function initAddModelDialog() {
+    const btn = document.getElementById('add-model-btn');
+    const dialog = document.getElementById('add-model-dialog');
+    const provider = document.getElementById('add-model-provider');
+    const nameInput = document.getElementById('add-model-name');
+    const labelInput = document.getElementById('add-model-label');
+    const errorEl = document.getElementById('add-model-error');
+    const cancelBtn = document.getElementById('add-model-cancel');
+    const saveBtn = document.getElementById('add-model-save');
+    const modelSelect = document.getElementById('model-select');
+    if (!btn || !dialog) return;
+
+    function showError(msg) {
+        if (!errorEl) return;
+        errorEl.textContent = msg;
+        errorEl.style.display = msg ? 'block' : 'none';
+    }
+
+    function open() {
+        nameInput.value = '';
+        labelInput.value = '';
+        provider.value = 'openai';
+        showError('');
+        dialog.style.display = 'flex';
+        nameInput.focus();
+    }
+
+    function close() {
+        dialog.style.display = 'none';
+    }
+
+    btn.addEventListener('click', open);
+    cancelBtn.addEventListener('click', close);
+    dialog.addEventListener('click', (e) => { if (e.target === dialog) close(); });
+
+    saveBtn.addEventListener('click', () => {
+        const value = nameInput.value.trim();
+        const label = labelInput.value.trim();
+        const prov = provider.value;
+        if (!value) { showError('กรุณากรอกชื่อโมเดล'); return; }
+
+        // Backend routes by prefix: gpt-* → OpenAI, gemini* → Gemini.
+        // Enforce a matching prefix so the request goes to the right provider.
+        if (prov === 'openai' && !value.startsWith('gpt') && !value.startsWith('o1') && !value.startsWith('o3')) {
+            showError('ชื่อโมเดล OpenAI ต้องขึ้นต้นด้วย gpt, o1 หรือ o3');
+            return;
+        }
+        if (prov === 'gemini' && !value.startsWith('gemini')) {
+            showError('ชื่อโมเดล Gemini ต้องขึ้นต้นด้วย gemini');
+            return;
+        }
+
+        const list = readCustomModels();
+        if (list.some(m => m.value === value) || modelSelect.querySelector(`option[value="${CSS.escape(value)}"]:not([data-custom="1"])`)) {
+            showError('มีโมเดลนี้อยู่แล้ว');
+            return;
+        }
+
+        list.push({ provider: prov, value, label });
+        writeCustomModels(list);
+        loadCustomModels();
+        modelSelect.value = value;
+        modelSelect.dispatchEvent(new Event('change'));
+        close();
+    });
 }
 
 // Start everything when the page loads
 initUpload();
 initChecklist();
 initModelSelect();
+initAddModelDialog();
 document.getElementById('verify-btn').addEventListener('click', runVerification);
 document.getElementById('export-btn').addEventListener('click', exportToExcel);

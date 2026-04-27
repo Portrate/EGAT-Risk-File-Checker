@@ -133,17 +133,20 @@
                                         {% endfor %}
                                     </optgroup>
                                     {% endif %}
-                                    <optgroup label="Google Gemini">
+                                    <optgroup label="Google Gemini" id="gemini-group">
                                         <option value="gemini-3.1-pro">Gemini 3.1 Pro</option>
                                         <option value="gemini-3-flash">Gemini 3 Flash</option>
                                     </optgroup>
-                                    <optgroup label="OpenAI">
+                                    <optgroup label="OpenAI" id="openai-group">
                                         <option value="gpt-5">GPT-5</option>
                                         <option value="gpt-4o">GPT-4o</option>
                                     </optgroup>
                                 </select>
                                 <span class="material-symbols-outlined" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--color-on-surface-variant);">expand_more</span>
                             </div>
+                            <button id="add-model-btn" type="button" title="เพิ่มโมเดลที่ต้องการ" style="display: flex; align-items: center; justify-content: center; padding: 0 0.75rem; border: 1px solid var(--color-outline-variant); border-radius: 12px; background: var(--color-surface-container-lowest); color: var(--color-on-surface); cursor: pointer;">
+                                <span class="material-symbols-outlined" data-icon="add">add</span>
+                            </button>
                             <button id="verify-btn" class="btn-signature" style="flex: 2; margin: 0;">
                                 <span class="material-symbols-outlined" data-icon="verified">verified</span>
                                 ตรวจสอบ (Check Document)
@@ -185,7 +188,36 @@
         </div>
     </main>
 
-    <script defer src="/static/js/main.js?v=4"></script>
+    <!-- Add Custom Model Dialog -->
+    <div id="add-model-dialog" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="background: var(--color-surface, #fff); border-radius: 12px; padding: 1.5rem; width: 90%; max-width: 420px; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+            <h3 style="margin: 0 0 1rem 0;">เพิ่มโมเดลที่ต้องการ</h3>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <label style="display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.875rem;">
+                    ผู้ให้บริการ
+                    <select id="add-model-provider" style="padding: 0.5rem; border: 1px solid var(--color-outline-variant); border-radius: 8px; background: var(--color-surface-container-lowest); color: var(--color-on-surface);">
+                        <option value="openai">OpenAI (gpt-*)</option>
+                        <option value="gemini">Google Gemini (gemini-*)</option>
+                    </select>
+                </label>
+                <label style="display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.875rem;">
+                    ชื่อโมเดล (Model ID)
+                    <input id="add-model-name" type="text" placeholder="เช่น gpt-4o-mini หรือ gemini-2.5-flash" style="padding: 0.5rem; border: 1px solid var(--color-outline-variant); border-radius: 8px; background: var(--color-surface-container-lowest); color: var(--color-on-surface);" />
+                </label>
+                <label style="display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.875rem;">
+                    ป้ายแสดงผล (ไม่บังคับ)
+                    <input id="add-model-label" type="text" placeholder="ปล่อยว่างเพื่อใช้ชื่อโมเดล" style="padding: 0.5rem; border: 1px solid var(--color-outline-variant); border-radius: 8px; background: var(--color-surface-container-lowest); color: var(--color-on-surface);" />
+                </label>
+                <p id="add-model-error" style="color: var(--color-error); font-size: 0.8125rem; margin: 0; display: none;"></p>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.25rem;">
+                <button id="add-model-cancel" type="button" style="padding: 0.5rem 1rem; border: 1px solid var(--color-outline-variant); border-radius: 8px; background: transparent; color: var(--color-on-surface); cursor: pointer;">ยกเลิก</button>
+                <button id="add-model-save" type="button" style="padding: 0.5rem 1rem; border: none; border-radius: 8px; background: var(--color-primary); color: #fff; cursor: pointer; font-weight: 600;">บันทึก</button>
+            </div>
+        </div>
+    </div>
+
+    <script defer src="/static/js/main.js?v=5"></script>
 </body>
 
 </html>
