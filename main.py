@@ -25,7 +25,7 @@ templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
 
 _LOCAL_MODELS = [
-    {"value": "gemma4:26b", "label": "Gemma 4 27B (Local)"},
+    {"value": "gemma4:26b", "label": "Gemma 4 26B (Local)"},
 ]
 
 
