@@ -65,10 +65,25 @@
                 <section class="grid-left checklist-card">
                     <div class="checklist-header">
                         <h3>กำหนดรายการตรวจสอบ</h3>
-                        <button id="add-row-btn" class="add-row-btn">
-                            <span class="material-symbols-outlined" data-icon="add_circle">add_circle</span>
-                            เพิ่มหัวข้อหลัก
-                        </button>
+                        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                            <div style="position: relative;">
+                                <select id="preset-select" title="โหลด Preset" style="padding: 0.4rem 2rem 0.4rem 0.75rem; border: 1px solid var(--color-outline-variant); border-radius: 8px; background: var(--color-surface-container-lowest); color: var(--color-on-surface); font-size: 0.8125rem; cursor: pointer; outline: none; appearance: none; max-width: 200px;">
+                                    <option value="">— เลือก Preset —</option>
+                                </select>
+                                <span class="material-symbols-outlined" style="position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--color-on-surface-variant); font-size: 1rem;">expand_more</span>
+                            </div>
+                            <button id="save-preset-btn" type="button" class="add-row-btn" title="บันทึก Preset" style="padding: 0.4rem 0.75rem;">
+                                <span class="material-symbols-outlined" data-icon="save">save</span>
+                                บันทึก
+                            </button>
+                            <button id="delete-preset-btn" type="button" class="add-row-btn" title="ลบ Preset ที่เลือก" style="padding: 0.4rem 0.75rem; display: none;">
+                                <span class="material-symbols-outlined" data-icon="delete">delete</span>
+                            </button>
+                            <button id="add-row-btn" class="add-row-btn">
+                                <span class="material-symbols-outlined" data-icon="add_circle">add_circle</span>
+                                เพิ่มหัวข้อหลัก
+                            </button>
+                        </div>
                     </div>
                     <div class="table-wrapper">
                         <table class="excel-table">
@@ -147,6 +162,9 @@
                             <button id="add-model-btn" type="button" title="เพิ่มโมเดลที่ต้องการ" style="display: flex; align-items: center; justify-content: center; padding: 0 0.75rem; border: 1px solid var(--color-outline-variant); border-radius: 12px; background: var(--color-surface-container-lowest); color: var(--color-on-surface); cursor: pointer;">
                                 <span class="material-symbols-outlined" data-icon="add">add</span>
                             </button>
+                            <button id="delete-model-btn" type="button" title="ลบโมเดลที่เพิ่มเอง" style="display: none; align-items: center; justify-content: center; padding: 0 0.75rem; border: 1px solid var(--color-error, #b00020); border-radius: 12px; background: var(--color-surface-container-lowest); color: var(--color-error, #b00020); cursor: pointer;">
+                                <span class="material-symbols-outlined" data-icon="close">close</span>
+                            </button>
                             <button id="verify-btn" class="btn-signature" style="flex: 2; margin: 0;">
                                 <span class="material-symbols-outlined" data-icon="verified">verified</span>
                                 ตรวจสอบ (Check Document)
@@ -217,7 +235,7 @@
         </div>
     </div>
 
-    <script defer src="/static/js/main.js?v=5"></script>
+    <script defer src="/static/js/main.js?v=7"></script>
 </body>
 
 </html>

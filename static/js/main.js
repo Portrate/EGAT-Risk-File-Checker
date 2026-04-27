@@ -167,7 +167,8 @@ function initChecklist() {
     checklistBody.querySelectorAll('tr').forEach(bindSubItemEvents);
 
     addRowBtn.addEventListener('click', () => {
-        rowCount++;
+        // Recompute from the DOM so presets loaded after init don't desync the counter
+        rowCount = checklistBody.querySelectorAll('tr').length + 1;
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td class="excel-row-index">${rowCount}</td>
@@ -502,6 +503,7 @@ async function runVerification() {
 function initModelSelect() {
     const modelSelect = document.getElementById('model-select');
     const apiKeyRow = document.getElementById('api-key-row');
+    const deleteBtn = document.getElementById('delete-model-btn');
     if (!modelSelect || !apiKeyRow) return;
 
     function updateApiKeyVisibility() {
@@ -510,9 +512,163 @@ function initModelSelect() {
         apiKeyRow.style.display = isCloud ? 'block' : 'none';
     }
 
-    modelSelect.addEventListener('change', updateApiKeyVisibility);
+    function updateDeleteButtonVisibility() {
+        if (!deleteBtn) return;
+        const opt = modelSelect.selectedOptions[0];
+        const isCustom = opt && opt.dataset.custom === '1';
+        deleteBtn.style.display = isCustom ? 'flex' : 'none';
+    }
+
+    modelSelect.addEventListener('change', () => {
+        updateApiKeyVisibility();
+        updateDeleteButtonVisibility();
+    });
+
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', () => {
+            const opt = modelSelect.selectedOptions[0];
+            if (!opt || opt.dataset.custom !== '1') return;
+            const value = opt.value;
+            const label = opt.textContent.replace(' (เพิ่มเอง)', '');
+            if (!window.confirm(`ลบโมเดล "${label}" หรือไม่?`)) return;
+
+            const list = readCustomModels().filter(m => m.value !== value);
+            writeCustomModels(list);
+            loadCustomModels();
+            // Reset selection to the first available option
+            modelSelect.selectedIndex = 0;
+            modelSelect.dispatchEvent(new Event('change'));
+        });
+    }
+
     loadCustomModels();
     updateApiKeyVisibility();
+    updateDeleteButtonVisibility();
+}
+
+// Presets: a saved checklist under a user-chosen name. Persisted in localStorage.
+const PRESETS_KEY = 'checklistPresets';
+
+function readPresets() {
+    try {
+        const raw = localStorage.getItem(PRESETS_KEY);
+        return raw ? JSON.parse(raw) : {};
+    } catch {
+        return {};
+    }
+}
+
+function writePresets(map) {
+    localStorage.setItem(PRESETS_KEY, JSON.stringify(map));
+}
+
+function refreshPresetDropdown(selectedName = '') {
+    const sel = document.getElementById('preset-select');
+    const delBtn = document.getElementById('delete-preset-btn');
+    if (!sel) return;
+    const presets = readPresets();
+    const names = Object.keys(presets).sort((a, b) => a.localeCompare(b, 'th'));
+    sel.innerHTML = '<option value="">— เลือก Preset —</option>' +
+        names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+    if (selectedName && presets[selectedName]) sel.value = selectedName;
+    if (delBtn) delBtn.style.display = sel.value ? 'inline-flex' : 'none';
+}
+
+function renderChecklist(checklist) {
+    const body = document.getElementById('checklist-body');
+    if (!body) return;
+    body.innerHTML = '';
+
+    const sections = (checklist && checklist.length) ? checklist : [{ title: '', items: [] }];
+
+    sections.forEach((section, idx) => {
+        const tr = document.createElement('tr');
+        const chipsHtml = (section.items || []).map(it => {
+            const score = !isNaN(parseFloat(it.score)) ? Math.max(0, parseFloat(it.score)) : 0;
+            return `<div class="sub-item-chip" data-score="${score}">
+                <span class="sub-item-text">${escapeHtml(it.name || '')}</span>
+                <span class="sub-item-score-badge" style="background:var(--color-surface-container-highest); border-radius:10px; padding:0 4px; font-size:0.6rem; font-weight:bold; margin-left:4px;">${score}</span>
+                <span class="material-symbols-outlined remove-sub-item">close</span>
+            </div>`;
+        }).join('');
+
+        tr.innerHTML = `
+            <td class="excel-row-index">${idx + 1}</td>
+            <td class="excel-cell"><input type="text" placeholder="หัวข้อหลัก" value="${escapeHtml(section.title || '')}" /></td>
+            <td class="excel-cell sub-items-cell">
+                <div class="sub-items-container">${chipsHtml}</div>
+                <div class="add-sub-item-wrapper" style="display: flex; gap: 0.25rem; align-items: center; margin-top: 0.25rem;">
+                    <input type="text" class="sub-item-input" placeholder="พิมพ์แล้วกด + หรือ Enter" style="flex: 1;" />
+                    <input type="number" class="sub-item-score-input" value="0" min="0" style="width: 50px; text-align: center; border: 1px solid var(--color-outline-variant); border-radius: 4px; padding: 0.25rem;" title="คะแนน" />
+                    <button type="button" class="btn-icon add-sub-item-btn" style="padding: 0.25rem; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px;">
+                        <span class="material-symbols-outlined" style="font-size: 1.25rem;">add</span>
+                    </button>
+                </div>
+            </td>
+            <td class="excel-cell" style="text-align:center;">
+                <button class="btn-icon delete-row-btn">
+                    <span class="material-symbols-outlined">delete</span>
+                </button>
+            </td>`;
+        body.appendChild(tr);
+        bindSubItemEvents(tr);
+        // Re-bind chip remove buttons for the chips we just rendered
+        tr.querySelectorAll('.sub-item-chip .remove-sub-item').forEach(btn => {
+            btn.addEventListener('click', () => btn.closest('.sub-item-chip').remove());
+        });
+        tr.querySelector('.delete-row-btn').addEventListener('click', () => {
+            tr.remove();
+            // Re-number remaining rows
+            document.querySelectorAll('#checklist-body tr').forEach((row, i) => {
+                const cell = row.querySelector('.excel-row-index');
+                if (cell) cell.textContent = i + 1;
+            });
+        });
+    });
+}
+
+function initPresets() {
+    const sel = document.getElementById('preset-select');
+    const saveBtn = document.getElementById('save-preset-btn');
+    const delBtn = document.getElementById('delete-preset-btn');
+    if (!sel || !saveBtn || !delBtn) return;
+
+    refreshPresetDropdown();
+
+    sel.addEventListener('change', () => {
+        delBtn.style.display = sel.value ? 'inline-flex' : 'none';
+        if (!sel.value) return;
+        const presets = readPresets();
+        const data = presets[sel.value];
+        if (data) renderChecklist(data);
+    });
+
+    saveBtn.addEventListener('click', () => {
+        const current = getChecklist();
+        if (current.length === 0) {
+            showError('ยังไม่มีรายการตรวจสอบให้บันทึก');
+            return;
+        }
+        const presets = readPresets();
+        const defaultName = sel.value || '';
+        const name = window.prompt('ตั้งชื่อ Preset:', defaultName);
+        if (!name) return;
+        const trimmed = name.trim();
+        if (!trimmed) return;
+        if (presets[trimmed] && !window.confirm(`มี Preset "${trimmed}" อยู่แล้ว ต้องการเขียนทับหรือไม่?`)) return;
+        presets[trimmed] = current;
+        writePresets(presets);
+        refreshPresetDropdown(trimmed);
+    });
+
+    delBtn.addEventListener('click', () => {
+        if (!sel.value) return;
+        if (!window.confirm(`ลบ Preset "${sel.value}" หรือไม่?`)) return;
+        const presets = readPresets();
+        delete presets[sel.value];
+        writePresets(presets);
+        refreshPresetDropdown();
+    });
 }
 
 // Custom models stored as [{ provider: 'openai'|'gemini', value, label }]
@@ -624,5 +780,6 @@ initUpload();
 initChecklist();
 initModelSelect();
 initAddModelDialog();
+initPresets();
 document.getElementById('verify-btn').addEventListener('click', runVerification);
 document.getElementById('export-btn').addEventListener('click', exportToExcel);
