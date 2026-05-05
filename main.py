@@ -15,6 +15,12 @@ from checker.excel_exporter import build_excel_response
 from checker.models import ChecklistSection
 from checker.orchestrator import MODEL, analyze_with_llm_stream
 from checker.pdf_extractor import extract_text_from_bytes
+from config import (
+    LOCAL_MODELS,
+    OLLAMA_TAGS_URL,
+    OLLAMA_CHECK_TIMEOUT,
+    HEALTH_CHECK_TIMEOUT,
+)
 
 # When packaged as an .exe, files are inside sys._MEIPASS instead of the script folder
 BASE_DIR = sys._MEIPASS if getattr(sys, "frozen", False) else os.path.dirname(os.path.abspath(__file__))
@@ -25,22 +31,17 @@ app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), na
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
 
-_LOCAL_MODELS = [
-    {"value": "gemma4:26b", "label": "Gemma 4 26B (Local)"},
-]
-
-
 @app.get("/")
 async def index(request: Request):
     installed: list[str] = []
     try:
-        async with httpx.AsyncClient(timeout=3) as client:
-            r = await client.get("http://localhost:11434/api/tags")
+        async with httpx.AsyncClient(timeout=OLLAMA_CHECK_TIMEOUT) as client:
+            r = await client.get(OLLAMA_TAGS_URL)
             if r.status_code == 200:
                 installed = [m["name"] for m in r.json().get("models", [])]
     except Exception:
         pass
-    local_models = [m for m in _LOCAL_MODELS if m["value"] in installed]
+    local_models = [m for m in LOCAL_MODELS if m["value"] in installed]
     return templates.TemplateResponse(request, "index.html", {"local_models": local_models})
 
 
@@ -76,7 +77,7 @@ async def analyze_stream(
             async for event in analyze_with_llm_stream(document_text, checklist_data, model=selected_model, api_key=api_key):
                 yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
         except httpx.ConnectError:
-            err = {"type": "error", "detail": "ไม่สามารถเชื่อมต่อ Ollama ได้ โปรดตรวจสอบว่า Ollama กำลังรันอยู่ที่ localhost:11434"}
+            err = {"type": "error", "detail": f"ไม่สามารถเชื่อมต่อ Ollama ได้ โปรดตรวจสอบว่า Ollama กำลังรันอยู่ที่ {OLLAMA_TAGS_URL}"}
             yield f"data: {json.dumps(err, ensure_ascii=False)}\n\n"
         except httpx.HTTPStatusError as e:
             code = e.response.status_code
@@ -120,8 +121,8 @@ async def health():
     # Ask Ollama if it is running; a 200 reply means it is ready
     ollama_ok = False
     try:
-        async with httpx.AsyncClient(timeout=5) as client:
-            r = await client.get("http://localhost:11434/api/tags")
+        async with httpx.AsyncClient(timeout=HEALTH_CHECK_TIMEOUT) as client:
+            r = await client.get(OLLAMA_TAGS_URL)
             ollama_ok = r.status_code == 200
     except Exception:
         pass

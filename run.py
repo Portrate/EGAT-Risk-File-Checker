@@ -14,6 +14,7 @@ if getattr(sys, "frozen", False):
     sys.path.insert(0, sys._MEIPASS)
 
 import uvicorn
+from config import HOST, PORT, DEFAULT_MODEL, OLLAMA_TAGS_URL, OLLAMA_CHECK_TIMEOUT, BROWSER_OPEN_DELAY
 
 
 def print_banner():
@@ -31,7 +32,7 @@ def check_ollama() -> bool:
 def is_ollama_running() -> bool:
     try:
         import httpx
-        r = httpx.get("http://localhost:11434/api/tags", timeout=3)
+        r = httpx.get(OLLAMA_TAGS_URL, timeout=OLLAMA_CHECK_TIMEOUT)
         return r.status_code == 200
     except Exception:
         return False
@@ -88,19 +89,17 @@ def main():
         else:
             is_running = True
 
-        if is_running and ensure_model("gemma4:26b"):
+        if is_running and ensure_model(DEFAULT_MODEL):
             local_ai_ready = True
 
     # --- สรุปสถานะ ---
     print()
     if local_ai_ready:
-        print("  Local AI (gemma4:26b) : พร้อมใช้งาน")
+        print(f"  Local AI ({DEFAULT_MODEL}) : พร้อมใช้งาน")
     else:
-        print("  Local AI (gemma4:26b) : ไม่พร้อม — ใช้ Gemini หรือ OpenAI แทนได้ผ่าน UI")
+        print(f"  Local AI ({DEFAULT_MODEL}) : ไม่พร้อม — ใช้ Gemini หรือ OpenAI แทนได้ผ่าน UI")
 
-    host = "127.0.0.1"
-    port = 8000
-    url = f"http://{host}:{port}"
+    url = f"http://{HOST}:{PORT}"
 
     print()
     print("=" * 50)
@@ -110,8 +109,8 @@ def main():
     print()
 
     from main import app  # noqa: E402
-    open_browser_delayed(url)
-    uvicorn.run(app, host=host, port=port)
+    open_browser_delayed(url, delay=BROWSER_OPEN_DELAY)
+    uvicorn.run(app, host=HOST, port=PORT)
 
 
 if __name__ == "__main__":

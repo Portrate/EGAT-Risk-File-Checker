@@ -3,18 +3,16 @@ import json
 import re
 import httpx
 
-# Ollama local API endpoint
-OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL = "gemma4:26b"
-
-# Separate read timeout (1200 s) because large documents take time to generate
-OLLAMA_TIMEOUT = httpx.Timeout(connect=30.0, read=1200.0, write=60.0, pool=10.0)
-
-# LLM generation options: fixed context window, short output, zero temperature for determinism
-OLLAMA_OPTIONS = {"num_ctx": 32768, "num_predict": 256, "temperature": 0, "repeat_penalty": 1.3, "repeat_last_n": 64}
-
-CHUNK_SIZE = 24_000      # characters per chunk sent to LLM
-CHUNK_OVERLAP = 2_000    # overlap between chunks to avoid missing content at boundaries
+from config import (
+    OLLAMA_GENERATE_URL as OLLAMA_URL,
+    DEFAULT_MODEL as MODEL,
+    OLLAMA_TIMEOUT,
+    OLLAMA_OPTIONS,
+    CLOUD_TIMEOUT,
+    CHUNK_SIZE,
+    CHUNK_OVERLAP,
+    MAX_RETRIES,
+)
 
 # JSON format string embedded in every prompt so the LLM knows the expected output shape
 _JSON_FORMAT_EXAMPLE = """{
@@ -270,9 +268,6 @@ async def _check_chunk_ollama(
     return result
 
 
-GEMINI_TIMEOUT = httpx.Timeout(connect=30.0, read=120.0, write=60.0, pool=10.0)
-
-
 async def _check_chunk_gemini(
     client: httpx.AsyncClient,
     chunk: str,
@@ -289,15 +284,14 @@ async def _check_chunk_gemini(
         "generationConfig": {"temperature": 0, "responseMimeType": "application/json"},
     }
     # Retry with exponential backoff on 429 (quota) and 503 (overload) responses
-    max_retries = 5
-    for attempt in range(max_retries):
-        response = await client.post(url, json=payload, timeout=GEMINI_TIMEOUT)
+    for attempt in range(MAX_RETRIES):
+        response = await client.post(url, json=payload, timeout=CLOUD_TIMEOUT)
         if response.status_code in (429, 503):
             wait = 2 ** attempt  # 1, 2, 4, 8, 16 seconds
             retry_after = response.headers.get("Retry-After")
             if retry_after:
                 wait = max(wait, int(retry_after))
-            print(f"[WARN] Gemini {response.status_code}, waiting {wait}s (attempt {attempt + 1}/{max_retries})")
+            print(f"[WARN] Gemini {response.status_code}, waiting {wait}s (attempt {attempt + 1}/{MAX_RETRIES})")
             await asyncio.sleep(wait)
             continue
         if response.status_code >= 400:
@@ -318,9 +312,6 @@ async def _check_chunk_gemini(
     else:
         result["reasoning"] = _sanitize_reasoning(result["reasoning"])
     return result
-
-
-OPENAI_TIMEOUT = httpx.Timeout(connect=30.0, read=120.0, write=60.0, pool=10.0)
 
 
 async def _check_chunk_openai(
@@ -370,20 +361,19 @@ async def _check_chunk_openai(
         **({"temperature": 0} if supports_temperature else {}),
     }
     # Retry with exponential backoff on 429 rate-limit responses
-    max_retries = 5
-    for attempt in range(max_retries):
+    for attempt in range(MAX_RETRIES):
         response = await client.post(
             url,
             json=payload,
             headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-            timeout=OPENAI_TIMEOUT,
+            timeout=CLOUD_TIMEOUT,
         )
         if response.status_code == 429:
             wait = 2 ** attempt  # 1, 2, 4, 8, 16 seconds
             retry_after = response.headers.get("Retry-After")
             if retry_after:
                 wait = max(wait, int(retry_after))
-            print(f"[WARN] OpenAI 429 rate limit, waiting {wait}s (attempt {attempt + 1}/{max_retries})")
+            print(f"[WARN] OpenAI 429 rate limit, waiting {wait}s (attempt {attempt + 1}/{MAX_RETRIES})")
             await asyncio.sleep(wait)
             continue
         if response.status_code >= 400:
