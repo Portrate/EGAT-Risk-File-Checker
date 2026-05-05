@@ -288,8 +288,24 @@ async def _check_chunk_gemini(
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
         "generationConfig": {"temperature": 0, "responseMimeType": "application/json"},
     }
-    response = await client.post(url, json=payload, timeout=GEMINI_TIMEOUT)
-    response.raise_for_status()
+    # Retry with exponential backoff on 429 (quota) and 503 (overload) responses
+    max_retries = 5
+    for attempt in range(max_retries):
+        response = await client.post(url, json=payload, timeout=GEMINI_TIMEOUT)
+        if response.status_code in (429, 503):
+            wait = 2 ** attempt  # 1, 2, 4, 8, 16 seconds
+            retry_after = response.headers.get("Retry-After")
+            if retry_after:
+                wait = max(wait, int(retry_after))
+            print(f"[WARN] Gemini {response.status_code}, waiting {wait}s (attempt {attempt + 1}/{max_retries})")
+            await asyncio.sleep(wait)
+            continue
+        if response.status_code >= 400:
+            print(f"[ERROR] Gemini {response.status_code}: {response.text}")
+            response.raise_for_status()
+        break
+    else:
+        response.raise_for_status()
     data = response.json()
     llm_text = data["candidates"][0]["content"]["parts"][0]["text"]
     print(f"[DEBUG] Gemini raw_response={repr(llm_text[:120])}")
@@ -400,7 +416,7 @@ async def _check_chunk(
 ) -> dict:
     if model.startswith("gemini"):
         return await _check_chunk_gemini(client, chunk, section_title, requirement, model, api_key)
-    if model.startswith("gpt"):
+    if model.startswith(("gpt", "o1", "o3")):
         return await _check_chunk_openai(client, chunk, section_title, requirement, model, api_key)
     return await _check_chunk_ollama(client, chunk, section_title, requirement, model)
 
