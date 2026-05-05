@@ -53,18 +53,56 @@ DOCUMENT:
 
 
 def _split_chunks(text: str) -> list[str]:
-    # If the document fits in one chunk, skip splitting entirely
+    # Split on [หน้า N] markers so chunks never cut across a page boundary
+    pages = [p for p in re.split(r'(?=\[หน้า \d+\])', text) if p.strip()]
+
+    # No page markers — fall back to character chunking
+    if len(pages) <= 1:
+        if len(text) <= CHUNK_SIZE:
+            return [text]
+        chunks: list[str] = []
+        start = 0
+        while start < len(text):
+            end = start + CHUNK_SIZE
+            chunks.append(text[start:end])
+            if end >= len(text):
+                break
+            start = end - CHUNK_OVERLAP
+        return chunks
+
     if len(text) <= CHUNK_SIZE:
         return [text]
+
     chunks = []
-    start = 0
-    while start < len(text):
-        end = start + CHUNK_SIZE
-        chunks.append(text[start:end])
-        if end >= len(text):
+    start_page = 0
+    while start_page < len(pages):
+        end_page = start_page
+        size = 0
+        while end_page < len(pages):
+            page_len = len(pages[end_page])
+            # Always include at least one page even if it alone exceeds CHUNK_SIZE
+            if size + page_len > CHUNK_SIZE and end_page > start_page:
+                break
+            size += page_len
+            end_page += 1
+
+        chunks.append("".join(pages[start_page:end_page]))
+
+        if end_page >= len(pages):
             break
-        # Step back by CHUNK_OVERLAP so the next chunk re-reads the tail of the previous one
-        start = end - CHUNK_OVERLAP
+
+        # Step back from end_page to build an overlap of ~CHUNK_OVERLAP chars
+        overlap_size = 0
+        next_start = end_page
+        while next_start > start_page + 1:
+            candidate = pages[next_start - 1]
+            if overlap_size + len(candidate) > CHUNK_OVERLAP:
+                break
+            overlap_size += len(candidate)
+            next_start -= 1
+
+        start_page = max(start_page + 1, next_start)
+
     return chunks
 
 
