@@ -330,47 +330,55 @@ function showError(msg) {
     }
 }
 
-// Fill the results panel with pass/fail cards from the /analyze response.
-// Passed items show the evidence quote; failed items show why they were missing.
-function renderResults(data) {
+// Build a single result card element. Used by both the bulk renderer and the streaming renderer.
+function buildResultCard(sectionTitle, item) {
+    const isFail = item.status === 'fail';
+    const score = item.score !== undefined ? item.score : 0;
+    const div = document.createElement('div');
+    div.className = `result-item${isFail ? ' error' : ''}`;
+    div.innerHTML = `
+        <div class="result-item-content">
+            <span class="material-symbols-outlined ${isFail ? 'text-error' : 'text-primary'}"
+                style="font-variation-settings:'FILL' 1">${isFail ? 'error' : 'check_circle'}</span>
+            <div>
+                <p class="result-item-title">${sectionTitle} — ${item.requirement}</p>
+                <p class="result-item-sub">${parseMarkdown(isFail ? item.reasoning : (item.evidence || item.reasoning))}</p>
+            </div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem;">
+            <span class="result-badge">${isFail ? 'MISSING' : 'FOUND'}</span>
+            <span class="result-score-text" style="font-size: 0.75rem; font-weight: 700; color: ${isFail ? 'var(--color-error)' : 'var(--color-primary)'};">${isFail ? `0` : `+${score}`} คะแนน</span>
+        </div>`;
+    return div;
+}
+
+// Show a "checking N/total" placeholder while streaming results in.
+function setStreamProgress(done, total) {
     const container = document.getElementById('result-items');
-    const scoreEl   = document.getElementById('score-value');
-    const totalScoreEl = document.getElementById('total-score-value');
-    const exportBtn = document.getElementById('export-btn');
-
-    if (scoreEl) scoreEl.textContent = `${data.similarity_score}%`;
-    if (totalScoreEl && data.summary) {
-        totalScoreEl.textContent = `${data.summary.passed_score} / ${data.summary.total_score}`;
-    }
     if (!container) return;
-    container.innerHTML = '';
-
-    for (const section of data.results) {
-        for (const item of section.items) {
-            const isFail = item.status === 'fail';
-            const score = item.score !== undefined ? item.score : 0;
-            const div = document.createElement('div');
-            div.className = `result-item${isFail ? ' error' : ''}`;
-            div.innerHTML = `
-                <div class="result-item-content">
-                    <span class="material-symbols-outlined ${isFail ? 'text-error' : 'text-primary'}"
-                        style="font-variation-settings:'FILL' 1">${isFail ? 'error' : 'check_circle'}</span>
-                    <div>
-                        <p class="result-item-title">${section.section} — ${item.requirement}</p>
-                        <p class="result-item-sub">${parseMarkdown(isFail ? item.reasoning : (item.evidence || item.reasoning))}</p>
-                    </div>
-                </div>
-                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem;">
-                    <span class="result-badge">${isFail ? 'MISSING' : 'FOUND'}</span>
-                    <span class="result-score-text" style="font-size: 0.75rem; font-weight: 700; color: ${isFail ? 'var(--color-error)' : 'var(--color-primary)'};">${isFail ? `0` : `+${score}`} คะแนน</span>
-                </div>`;
-            container.appendChild(div);
-        }
+    let placeholder = document.getElementById('stream-progress');
+    if (!placeholder) {
+        placeholder = document.createElement('div');
+        placeholder.id = 'stream-progress';
+        placeholder.className = 'result-item';
+        placeholder.style.opacity = '0.7';
+        container.appendChild(placeholder);
     }
+    placeholder.innerHTML = `
+        <div class="result-item-content">
+            <span class="material-symbols-outlined spinning text-primary">progress_activity</span>
+            <div>
+                <p class="result-item-title">กำลังตรวจสอบ ${done}/${total}</p>
+                <p class="result-item-sub">โปรดรอสักครู่...</p>
+            </div>
+        </div>`;
+    // Always keep it at the bottom
+    container.appendChild(placeholder);
+}
 
-    lastResult = data;
-    // Only show the export button after results are ready.
-    if (exportBtn) exportBtn.style.display = 'inline-flex';
+function clearStreamProgress() {
+    const placeholder = document.getElementById('stream-progress');
+    if (placeholder) placeholder.remove();
 }
 
 // Send the last result to /export/excel and start a file download in the browser.
@@ -436,6 +444,85 @@ function stopTimer() {
     }
 }
 
+// Read an SSE response (text/event-stream) and dispatch each event to the UI.
+// Events: start | item | done | error.
+async function consumeStream(res) {
+    const container = document.getElementById('result-items');
+    const scoreEl = document.getElementById('score-value');
+    const totalScoreEl = document.getElementById('total-score-value');
+    const exportBtn = document.getElementById('export-btn');
+    if (container) container.innerHTML = '';
+    if (scoreEl) scoreEl.textContent = '—';
+    if (totalScoreEl) totalScoreEl.textContent = '—';
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '';
+    let total = 0;
+    let done = 0;
+    let finalError = null;
+
+    while (true) {
+        const { value, done: streamDone } = await reader.read();
+        if (streamDone) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        // SSE events are separated by a blank line. Split on \n\n.
+        let sep;
+        while ((sep = buffer.indexOf('\n\n')) !== -1) {
+            const rawEvent = buffer.slice(0, sep);
+            buffer = buffer.slice(sep + 2);
+            const dataLines = rawEvent.split('\n').filter(l => l.startsWith('data:')).map(l => l.slice(5).trimStart());
+            if (!dataLines.length) continue;
+            let event;
+            try {
+                event = JSON.parse(dataLines.join('\n'));
+            } catch {
+                continue;
+            }
+
+            if (event.type === 'start') {
+                total = event.total || 0;
+                done = 0;
+                setStreamProgress(done, total);
+            } else if (event.type === 'item') {
+                done = event.index || (done + 1);
+                if (container) {
+                    const card = buildResultCard(event.section || '', {
+                        requirement: event.requirement,
+                        score: event.score,
+                        status: event.status,
+                        reasoning: event.reasoning,
+                        evidence: event.evidence,
+                    });
+                    // Insert above the progress placeholder so it stays at the bottom
+                    const placeholder = document.getElementById('stream-progress');
+                    if (placeholder) container.insertBefore(card, placeholder);
+                    else container.appendChild(card);
+                }
+                setStreamProgress(done, total);
+            } else if (event.type === 'done') {
+                clearStreamProgress();
+                if (scoreEl) scoreEl.textContent = `${event.similarity_score}%`;
+                if (totalScoreEl && event.summary) {
+                    totalScoreEl.textContent = `${event.summary.passed_score} / ${event.summary.total_score}`;
+                }
+                lastResult = {
+                    summary: event.summary,
+                    similarity_score: event.similarity_score,
+                    results: event.results,
+                };
+                if (exportBtn) exportBtn.style.display = 'inline-flex';
+            } else if (event.type === 'error') {
+                finalError = event.detail || 'เกิดข้อผิดพลาดระหว่างการตรวจสอบ';
+            }
+        }
+    }
+
+    clearStreamProgress();
+    if (finalError) throw new Error(finalError);
+}
+
 // Check that a file and checklist exist, then send them to /analyze and show the results.
 async function runVerification() {
     const checklist = getChecklist();
@@ -475,10 +562,9 @@ async function runVerification() {
             form.append('api_key', apiKey);
         }
 
-        const res = await fetch('/analyze', { method: 'POST', body: form });
+        const res = await fetch('/analyze/stream', { method: 'POST', body: form });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            // Backend already returns Thai messages as a string; pydantic 422 returns an array — replace with a friendly Thai message
             let msg;
             if (typeof data.detail === 'string') {
                 msg = data.detail;
@@ -491,7 +577,7 @@ async function runVerification() {
             }
             throw new Error(msg);
         }
-        renderResults(await res.json());
+        await consumeStream(res);
     } catch (err) {
         // Network/parse failures fall through here — show a generic Thai message rather than raw exception text
         const msg = err.message && /[฀-๿]/.test(err.message)

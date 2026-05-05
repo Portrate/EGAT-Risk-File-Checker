@@ -70,12 +70,16 @@ def _split_chunks(text: str) -> list[str]:
     return chunks
 
 
-async def analyze_with_llm(document_text: str, checklist: list[dict], model: str = MODEL, api_key: str = "") -> dict:
-    # Check each sub-item individually against the document.
-    print(f"[DEBUG] Model: {model} | Checklist received: {json.dumps(checklist, ensure_ascii=False)}")
+async def analyze_with_llm_stream(document_text: str, checklist: list[dict], model: str = MODEL, api_key: str = ""):
+    # Same as analyze_with_llm, but yields one event per checklist item as it completes,
+    # plus a final "done" event with the full aggregated result.
+    print(f"[DEBUG] (stream) Model: {model} | Checklist received: {json.dumps(checklist, ensure_ascii=False)}")
+
+    total_items = sum(len(s.get("items", [])) for s in checklist)
+    yield {"type": "start", "total": total_items}
 
     results = []
-    # Reuse a single HTTP client across all LLM calls to avoid connection overhead
+    index = 0
     async with httpx.AsyncClient() as client:
         for section in checklist:
             section_title = section.get("title", "")
@@ -83,22 +87,41 @@ async def analyze_with_llm(document_text: str, checklist: list[dict], model: str
             for req_item in section.get("items", []):
                 requirement = req_item.get("name", "")
                 score = req_item.get("score", 0.0)
-                # Check this requirement and collect the result
                 check = await _check_single_item(client, document_text, section_title, requirement, model=model, api_key=api_key)
-                items_out.append({
+                item_result = {
                     "requirement": requirement,
                     "score": score,
                     "status": check.get("status", "fail"),
                     "reasoning": check.get("reasoning", ""),
                     "evidence": check.get("evidence"),
-                })
+                }
+                items_out.append(item_result)
+                index += 1
+                yield {
+                    "type": "item",
+                    "index": index,
+                    "total": total_items,
+                    "section": section_title,
+                    **item_result,
+                }
             results.append({"section": section_title, "items": items_out})
 
-    # Compute summary counts across all sections
     total = sum(len(s["items"]) for s in results)
     passed = sum(1 for s in results for it in s["items"] if it["status"] == "pass")
-    return {
-        "summary": {"total": total, "passed": passed, "failed": total - passed},
+    total_score = sum(float(it.get("score", 0.0)) for s in results for it in s["items"])
+    passed_score = sum(float(it.get("score", 0.0)) for s in results for it in s["items"] if it["status"] == "pass")
+    score_pct = round(passed / total * 100) if total > 0 else 0
+
+    yield {
+        "type": "done",
+        "summary": {
+            "total": total,
+            "passed": passed,
+            "failed": total - passed,
+            "total_score": total_score,
+            "passed_score": passed_score,
+        },
+        "similarity_score": score_pct,
         "results": results,
     }
 

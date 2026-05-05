@@ -6,13 +6,14 @@ import httpx
 import pymupdf
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.encoders import jsonable_encoder
+from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
 
 from checker.excel_exporter import build_excel_response
 from checker.models import ChecklistSection
-from checker.orchestrator import MODEL, analyze_with_llm
+from checker.orchestrator import MODEL, analyze_with_llm_stream
 from checker.pdf_extractor import extract_text_from_bytes
 
 # When packaged as an .exe, files are inside sys._MEIPASS instead of the script folder
@@ -43,14 +44,14 @@ async def index(request: Request):
     return templates.TemplateResponse(request, "index.html", {"local_models": local_models})
 
 
-@app.post("/analyze")
-async def analyze(
+@app.post("/analyze/stream")
+async def analyze_stream(
     file: UploadFile = File(...),
-    checklist: str = Form(...),  # checklist sent as a JSON string together with the PDF
+    checklist: str = Form(...),
     model: str = Form(default=""),
     api_key: str = Form(default=""),
 ):
-    # Keep the PDF in memory only — never save it to disk
+    # Validate inputs up-front so errors come back as proper HTTP responses, not as SSE error events
     pdf_bytes = await file.read()
     try:
         document_text = extract_text_from_bytes(pdf_bytes)
@@ -62,72 +63,45 @@ async def analyze(
     except json.JSONDecodeError as e:
         raise HTTPException(status_code=422, detail=f"checklist JSON ไม่ถูกต้อง: {e}")
 
-    # Check that the checklist data has the right shape before sending to the AI
     try:
         sections = [ChecklistSection.model_validate(s) for s in raw]
     except ValidationError as e:
-        # jsonable_encoder strips ValueError objects that pydantic puts in ctx.error
         raise HTTPException(status_code=422, detail=jsonable_encoder(e.errors()))
 
     checklist_data = [{"title": s.title, "items": [{"name": i.name, "score": i.score} for i in s.items]} for s in sections]
-
     selected_model = model or MODEL
 
-    try:
-        llm_result = await analyze_with_llm(document_text, checklist_data, model=selected_model, api_key=api_key)
-    except httpx.ConnectError:
-        # Ollama is not running — ask the user to start it first
-        raise HTTPException(
-            status_code=502,
-            detail="ไม่สามารถเชื่อมต่อ Ollama ได้ โปรดตรวจสอบว่า Ollama กำลังรันอยู่ที่ localhost:11434",
-        )
-    except httpx.HTTPStatusError as e:
-        code = e.response.status_code
-        if code == 400:
-            detail = "คำขอไม่ถูกต้อง โปรดตรวจสอบชื่อโมเดลและรูปแบบคำขอ (400 Bad Request)"
-        elif code == 401:
-            detail = "API Key ไม่ถูกต้องหรือหมดอายุ โปรดตรวจสอบ API Key อีกครั้ง (401 Unauthorized)"
-        elif code == 403:
-            detail = "API Key ไม่มีสิทธิ์เข้าถึงโมเดลนี้ โปรดตรวจสอบสิทธิ์การใช้งาน (403 Forbidden)"
-        elif code == 404:
-            detail = "ไม่พบโมเดลที่เลือก โปรดตรวจสอบชื่อโมเดลให้ถูกต้อง (404 Not Found)"
-        elif code == 429:
-            detail = "เกินขีดจำกัดการใช้งาน API โปรดรอสักครู่แล้วลองใหม่อีกครั้ง (429 Too Many Requests)"
-        else:
-            detail = f"เกิดข้อผิดพลาดจาก AI provider (HTTP {code})"
-        raise HTTPException(status_code=502, detail=detail)
-    except (json.JSONDecodeError, KeyError, ValueError) as e:
-        raise HTTPException(status_code=500, detail=f"แปลงผลลัพธ์จาก LLM ไม่ได้: {e}")
+    async def event_stream():
+        try:
+            async for event in analyze_with_llm_stream(document_text, checklist_data, model=selected_model, api_key=api_key):
+                yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+        except httpx.ConnectError:
+            err = {"type": "error", "detail": "ไม่สามารถเชื่อมต่อ Ollama ได้ โปรดตรวจสอบว่า Ollama กำลังรันอยู่ที่ localhost:11434"}
+            yield f"data: {json.dumps(err, ensure_ascii=False)}\n\n"
+        except httpx.HTTPStatusError as e:
+            code = e.response.status_code
+            if code == 400:
+                detail = "คำขอไม่ถูกต้อง โปรดตรวจสอบชื่อโมเดลและรูปแบบคำขอ (400 Bad Request)"
+            elif code == 401:
+                detail = "API Key ไม่ถูกต้องหรือหมดอายุ โปรดตรวจสอบ API Key อีกครั้ง (401 Unauthorized)"
+            elif code == 403:
+                detail = "API Key ไม่มีสิทธิ์เข้าถึงโมเดลนี้ โปรดตรวจสอบสิทธิ์การใช้งาน (403 Forbidden)"
+            elif code == 404:
+                detail = "ไม่พบโมเดลที่เลือก โปรดตรวจสอบชื่อโมเดลให้ถูกต้อง (404 Not Found)"
+            elif code == 429:
+                detail = "เกินขีดจำกัดการใช้งาน API โปรดรอสักครู่แล้วลองใหม่อีกครั้ง (429 Too Many Requests)"
+            else:
+                detail = f"เกิดข้อผิดพลาดจาก AI provider (HTTP {code})"
+            yield f"data: {json.dumps({'type': 'error', 'detail': detail}, ensure_ascii=False)}\n\n"
+        except Exception as e:
+            err = {"type": "error", "detail": f"เกิดข้อผิดพลาด: {e}"}
+            yield f"data: {json.dumps(err, ensure_ascii=False)}\n\n"
 
-    results = llm_result.get("results", [])
-
-    # Count how many items passed and add up their scores
-    total = 0
-    passed = 0
-    total_score = 0.0
-    passed_score = 0.0
-    for section in results:
-        for item in section.get("items", []):
-            total += 1
-            item_score = float(item.get("score", 0.0))
-            total_score += item_score
-            if item.get("status") == "pass":
-                passed += 1
-                passed_score += item_score
-
-    score = round(passed / total * 100) if total > 0 else 0
-
-    return {
-        "summary": {
-            "total": total,
-            "passed": passed,
-            "failed": total - passed,
-            "total_score": total_score,
-            "passed_score": passed_score,
-        },
-        "similarity_score": score,
-        "results": results,
-    }
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @app.post("/export/excel")
