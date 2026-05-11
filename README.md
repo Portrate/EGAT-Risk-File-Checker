@@ -3,6 +3,8 @@
 ระบบตรวจสอบเอกสาร PDF ว่ามีเนื้อหาครบถ้วนตามข้อกำหนดที่ผู้ใช้กำหนด
 รองรับทั้ง Local AI (Gemma 4 ผ่าน Ollama) และ Cloud AI (Gemini, OpenAI)
 
+[สื่อการนำเสนอ](https://portrate.github.io/EGAT-Risk-File-Checker/)
+
 ---
 
 ## ความต้องการของระบบ
@@ -317,8 +319,12 @@ EGAT-Risk-File-Checker/
 │   ├── css/style.css
 │   └── js/app.js               ← frontend logic (fetch/analyze, render results)
 │
-└── templates/
-    └── index.html              ← single-page UI served by Jinja2
+├── templates/
+│   └── index.html              ← single-page UI served by Jinja2
+│
+└── docs/
+    ├── index.html              ← project presentation slides (open in browser)
+    └── deck-stage.js           ← slide deck controller
 ```
 
 ---
