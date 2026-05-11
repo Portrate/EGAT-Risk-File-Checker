@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EGAT Risk File Checker — นำเสนอโครงการ</title>
+<script src="deck-stage.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --egat-purple: #004EA2;
+  --egat-purple-dark: #003B7A;
+  --egat-purple-light: #2670B8;
+  --egat-gold: #FFCB00;
+  --egat-gold-light: #FFD940;
+  --egat-red: #ED1C27;
+  --egat-blue: #004EA2;
+  --egat-white: #FAFAFA;
+  --egat-gray: #E4EAF0;
+  --egat-dark: #0A1929;
+}
+deck-stage { background: #060E1A; }
+section {
+  font-family: 'IBM Plex Sans Thai', 'Sarabun', sans-serif;
+  color: #0A1929;
+  overflow: hidden;
+}
+/* Utility */
+.slide-purple { background: var(--egat-purple); color: #fff; }
+.slide-dark { background: var(--egat-dark); color: #fff; }
+.slide-white { background: var(--egat-white); color: var(--egat-dark); }
+.slide-gold-accent { background: linear-gradient(135deg, var(--egat-purple) 0%, var(--egat-purple-dark) 100%); color: #fff; }
+
+.tag {
+  display: inline-block; padding: 6px 20px; border-radius: 100px;
+  font-size:24px; font-weight: 600; letter-spacing: 0.5px;
+}
+.tag-gold { background: var(--egat-gold); color: var(--egat-dark); }
+.tag-white { background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.25); }
+.tag-purple { background: var(--egat-purple); color: #fff; }
+
+.divider-gold { width: 80px; height: 4px; background: var(--egat-gold); border-radius: 2px; }
+.divider-white { width: 80px; height: 4px; background: rgba(255,255,255,0.4); border-radius: 2px; }
+
+h1 { font-weight: 800; margin: 0; line-height: 1.15; }
+h2 { font-weight: 700; margin: 0; line-height: 1.2; }
+h3 { font-weight: 600; margin: 0; line-height: 1.3; }
+p { margin: 0; line-height: 1.6; }
+
+.card {
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 16px; padding: 32px;
+}
+.card-white {
+  background: #fff; border: 1px solid #D0D8E4;
+  border-radius: 16px; padding: 32px; box-shadow: 0 2px 12px rgba(0,78,162,0.06);
+}
+.card-purple {
+  background: var(--egat-purple); color: #fff;
+  border-radius: 16px; padding: 32px;
+}
+
+.icon-circle {
+  width: 56px; height: 56px; border-radius: 50%; display: flex;
+  align-items: center; justify-content: center; font-size: 28px; flex-shrink: 0;
+}
+.icon-gold { background: var(--egat-gold); color: var(--egat-dark); }
+.icon-purple { background: var(--egat-purple); color: #fff; }
+.icon-white { background: rgba(255,255,255,0.15); color: #fff; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+
+.num-big { font-size:60px; font-weight: 800; color: var(--egat-gold); line-height: 1; }
+.num-big-purple { font-size:60px; font-weight: 800; color: var(--egat-purple); line-height: 1; }
+
+/* Flow arrow */
+.flow { display: flex; align-items: stretch; gap: 0; }
+.flow-step {
+  flex: 1; padding: 20px 24px; text-align: center; position: relative;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+}
+.flow-arrow {
+  width: 28px; display: flex; align-items: center; justify-content: center;
+  color: var(--egat-gold); font-size: 28px; font-weight: 700; flex-shrink: 0;
+}
+
+/* Table */
+.tbl { width: 100%; border-collapse: collapse; font-size:26px; }
+.tbl th { background: var(--egat-purple); color: #fff; padding: 14px 20px; text-align: left; font-weight: 600; }
+.tbl td { padding: 14px 20px; border-bottom: 1px solid #D0D8E4; }
+.tbl tr:nth-child(even) td { background: #EDF2F8; }
+
+.footer-bar {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 6px;
+  background: linear-gradient(90deg, var(--egat-gold) 0%, var(--egat-red, #ED1C27) 50%, var(--egat-purple) 100%);
+}
+
+.slide-num {
+  position: absolute; bottom: 28px; right: 48px; font-size:22px;
+  color: rgba(255,255,255,0.35); font-weight: 500;
+}
+.slide-num-dark {
+  position: absolute; bottom: 28px; right: 48px; font-size:22px;
+  color: rgba(30,20,51,0.25); font-weight: 500;
+}
+</style>
+</head>
+<body style="background-color: rgb(3, 78, 162)">
+<deck-stage>
+
+<!-- SLIDE 01: Title -->
+<section class="slide-gold-accent" data-screen-label="01 Title" style="display: flex; flex-direction: column; justify-content: center; padding: 80px 100px; position: relative; color: #fff">
+  <div style="position:absolute; top:0; right:0; width:480px; height:480px; background: radial-gradient(circle at 80% 20%, rgba(212,168,67,0.15) 0%, transparent 70%);"></div>
+  <div style="display:flex; flex-direction:column; gap:28px; position:relative; z-index:1;">
+    <span class="tag tag-gold" style="align-self:flex-start;">การไฟฟ้าฝ่ายผลิตแห่งประเทศไทย (EGAT)</span>
+    <h1 style="font-size:72px;">Risk File Checker</h1>
+    <h2 style="font-size:40px; font-weight:400; opacity:0.85;">ระบบตรวจสอบความครบถ้วนของเอกสารความเสี่ยง<br/>ด้วยปัญญาประดิษฐ์</h2>
+    <div class="divider-gold" style="margin-top:8px;"></div>
+    <p style="font-size:26px; opacity:0.6; margin-top:12px;">นำเสนอภาพรวมระบบ ฟังก์ชันการทำงาน และเทคโนโลยีที่ใช้</p>
+  </div>
+  <div class="footer-bar"></div>
+  <span class="slide-num">1 / 16</span>
+</section>
+
+<!-- SLIDE 02: Problem -->
+<section class="slide-white" data-screen-label="02 ที่มาและปัญหา" style="display:flex; flex-direction:column; padding: 72px 100px; gap:40px; position:relative;">
+  <div>
+    <span class="tag tag-purple" style="margin-bottom:16px;">ที่มาและความสำคัญ</span>
+    <h2 style="font-size:50px; margin-top:20px; color:var(--egat-purple);">ทำไมต้องมีระบบนี้?</h2>
+  </div>
+  <div class="grid-2" style="flex:1;">
+    <div style="display:flex; flex-direction:column; gap:24px;">
+      <h3 style="font-size:30px; color:var(--egat-purple);">ปัญหาเดิม</h3>
+      <div style="display:flex; gap:16px; align-items:flex-start;">
+        <div class="icon-circle icon-purple" style="font-size:26px;">⏱</div>
+        <div><p style="font-size:26px; font-weight:600;">ใช้เวลามาก</p><p style="font-size:24px; color:#666; margin-top:4px;">การตรวจสอบเอกสารด้วยบุคลากรแต่ละฉบับต้องใช้เวลาอ่านและเปรียบเทียบเป็นเวลานาน</p></div>
+      </div>
+      <div style="display:flex; gap:16px; align-items:flex-start;">
+        <div class="icon-circle icon-purple" style="font-size:26px;">⚠</div>
+        <div><p style="font-size:26px; font-weight:600;">โอกาสผิดพลาดสูง</p><p style="font-size:24px; color:#666; margin-top:4px;">การตรวจสอบด้วยสายตาอาจพลาดรายละเอียดสำคัญ โดยเฉพาะเอกสารที่มีจำนวนหน้ามาก</p></div>
+      </div>
+      <div style="display:flex; gap:16px; align-items:flex-start;">
+        <div class="icon-circle icon-purple" style="font-size:26px;">📋</div>
+        <div><p style="font-size:26px; font-weight:600;">ไม่มีมาตรฐานกลาง</p><p style="font-size:24px; color:#666; margin-top:4px;">เกณฑ์การตรวจสอบอาจแตกต่างกันไปตามผู้ตรวจแต่ละคน ขาดความสม่ำเสมอ</p></div>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:24px;">
+      <h3 style="font-size:30px; color:var(--egat-gold);">แนวทางแก้ไข</h3>
+      <div class="card-purple" style="min-height: 300px; display:flex; flex-direction:column; gap:20px; justify-content:center;">
+        <p style="font-size:28px; font-weight:600;">นำ AI มาช่วยตรวจสอบอัตโนมัติ</p>
+        <p style="font-size:24px; opacity:0.85; line-height:1.7;">ระบบรับไฟล์ PDF และรายการตรวจสอบ (Checklist) จากผู้ใช้ จากนั้นใช้ปัญญาประดิษฐ์จะวิเคราะห์ว่าเอกสารมีเนื้อหาครบตามข้อกำหนดหรือไม่ พร้อมให้คะแนนและหลักฐานอ้างอิง</p>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bar"></div>
+  <span class="slide-num-dark">2 / 16</span>
+</section>
+
+<!-- SLIDE 03: Overview -->
+<section class="slide-white" data-screen-label="03 ภาพรวมระบบ" style="display:flex; flex-direction:column; padding: 72px 100px; gap:36px; position:relative;">
+  <div>
+    <span class="tag tag-purple">ภาพรวมการทำงาน</span>
+    <h2 style="font-size:48px; margin-top:20px; color:var(--egat-purple);">ระบบทำงานอย่างไร?</h2>
+  </div>
+  <div class="flow" style="background:#EDF2F8; border-radius:16px; padding:8px;">
+    <div class="flow-step" style="border-radius:12px;">
+      <div class="icon-circle icon-gold">📄</div>
+      <p style="font-size:24px; font-weight:700; color:var(--egat-purple);">อัปโหลด PDF</p>
+      <p style="font-size:21px; color:#666;">ผู้ใช้เลือกไฟล์เอกสาร<br/>ที่ต้องการตรวจสอบ</p>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="icon-circle icon-gold">📝</div>
+      <p style="font-size:24px; font-weight:700; color:var(--egat-purple);">กำหนด Checklist</p>
+      <p style="font-size:21px; color:#666;">ระบุหัวข้อและรายการ<br/>ที่ต้องตรวจสอบ</p>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="icon-circle icon-gold">🔍</div>
+      <p style="font-size:24px; font-weight:700; color:var(--egat-purple);">อ่านข้อความ</p>
+      <p style="font-size:21px; color:#666;">อ่านข้อความ PDF<br/>รองรับไฟล์ดิจิทัลและภาพสแกน</p>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="icon-circle icon-gold">🤖</div>
+      <p style="font-size:24px; font-weight:700; color:var(--egat-purple);">AI วิเคราะห์</p>
+      <p style="font-size:21px; color:#666;">ส่งข้อความให้ AI ตรวจสอบ<br/>ทีละรายการ</p>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="border-radius:12px;">
+      <div class="icon-circle icon-gold">📊</div>
+      <p style="font-size:24px; font-weight:700; color:var(--egat-purple);">แสดงผลลัพธ์</p>
+      <p style="font-size:21px; color:#666;">ผ่าน/ไม่ผ่าน พร้อมคะแนน<br/>และหลักฐานอ้างอิง</p>
+    </div>
+  </div>
+  <div class="grid-3" style="margin-top:8px;">
+    <div class="card-white" style="text-align:center; padding:24px;">
+      <p style="font-size:22px; font-weight:600; color:var(--egat-purple);">ผู้ใช้กำหนด Checklist เอง</p>
+      <p style="font-size:20px; color:#888; margin-top:6px;">บันทึกเป็น Preset ใช้ซ้ำได้</p>
+    </div>
+    <div class="card-white" style="text-align:center; padding:24px;">
+      <p style="font-size:22px; font-weight:600; color:var(--egat-purple);">เลือก AI ได้ตามความเหมาะสม</p>
+      <p style="font-size:20px; color:#888; margin-top:6px;">Local AI / Gemini / OpenAI</p>
+    </div>
+    <div class="card-white" style="text-align:center; padding:24px;">
+      <p style="font-size:22px; font-weight:600; color:var(--egat-purple);">ส่งออก Excel ได้ทันที</p>
+      <p style="font-size:20px; color:#888; margin-top:6px;">สรุปผล + รายละเอียดทุกข้อ</p>
+    </div>
+  </div>
+  <div class="footer-bar"></div>
+  <span class="slide-num-dark">3 / 16</span>
+</section>
+
+<!-- SLIDE 04: Architecture -->
+<section class="slide-dark" data-screen-label="04 สถาปัตยกรรม" style="display:flex; flex-direction:column; padding: 72px 100px; gap:36px; position:relative;">
+  <div>
+    <span class="tag tag-gold">สถาปัตยกรรมระบบ</span>
+    <h2 style="font-size:48px; margin-top:20px;">โครงสร้างของระบบ</h2>
+  </div>
+  <div style="display:flex; gap:32px; flex:1;">
+    <!-- Left: main stack -->
+    <div style="flex:1; display:flex; flex-direction:column; gap:16px;">
+      <div class="card" style="display:flex; gap:20px; align-items:center;">
+        <div class="icon-circle icon-gold">🖥</div>
+        <div>
+          <p style="font-size:26px; font-weight:700;">Frontend (หน้าจอผู้ใช้งาน)</p>
+          <p style="font-size:22px; opacity:0.7;">HTML + CSS + Vanilla JavaScript<br/>ออกแบบด้วย Jinja2 Templates แสดงผลผ่านเว็บเบราว์เซอร์</p>
+        </div>
+      </div>
+      <div style="text-align:center; color:var(--egat-gold); font-size:28px;">⬇</div>
+      <div class="card" style="display:flex; gap:20px; align-items:center;">
+        <div class="icon-circle icon-gold">⚙</div>
+        <div>
+          <p style="font-size:26px; font-weight:700;">Backend (ระบบประมวลผล)</p>
+          <p style="font-size:22px; opacity:0.7;">FastAPI (Python) ทำงานบน Uvicorn<br/>รับคำสั่ง อ่าน PDF ส่งคำถามให้ AI และรวบรวมผลลัพธ์</p>
+        </div>
+      </div>
+      <div style="text-align:center; color:var(--egat-gold); font-size:28px;">⬇</div>
+      <div class="card" style="display:flex; gap:20px; align-items:center;">
+        <div class="icon-circle icon-gold">🤖</div>
+        <div>
+          <p style="font-size:26px; font-weight:700;">AI Layer</p>
+          <p style="font-size:22px; opacity:0.7;">รองรับ 3 ช่องทาง: Ollama (Local), Gemini API, OpenAI API<br/>สื่อสารผ่าน HTTP (httpx)</p>
+        </div>
+      </div>
+    </div>
+    <!-- Right: file modules -->
+    <div style="width:380px; display:flex; flex-direction:column; gap:16px;">
+      <p style="font-size:24px; font-weight:600; color:var(--egat-gold); margin-bottom:4px;">โครงสร้างของไฟล์</p>
+      <div class="card" style="padding:20px; font-size:22px; display:flex; flex-direction:column; gap:12px;">
+        <div><span style="color:var(--egat-gold); font-weight:700;">run.py</span><span style="opacity:0.6;"> — จุดเริ่มต้นโปรแกรม</span></div>
+        <div><span style="color:var(--egat-gold); font-weight:700;">main.py</span><span style="opacity:0.6;"> — API Routes ทั้งหมด</span></div>
+        <div><span style="color:var(--egat-gold); font-weight:700;">config.py</span><span style="opacity:0.6;"> — ตัวแปรต่างๆ ของระบบ</span></div>
+        <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:12px;">
+          <span style="color:var(--egat-gold); font-weight:700;">checker/</span>
+        </div>
+        <div style="padding-left:16px;"><span style="color:var(--egat-gold-light);">pdf_extractor.py</span><span style="opacity:0.6;"> — อ่าน PDF</span></div>
+        <div style="padding-left:16px;"><span style="color:var(--egat-gold-light);">orchestrator.py</span><span style="opacity:0.6;"> — ควบคุม AI</span></div>
+        <div style="padding-left:16px;"><span style="color:var(--egat-gold-light);">models.py</span><span style="opacity:0.6;"> — โครงสร้างข้อมูล</span></div>
+        <div style="padding-left:16px;"><span style="color:var(--egat-gold-light);">excel_exporter.py</span><span style="opacity:0.6;"> — ส่งออก Excel</span></div>
+      </div>
+      <div class="card" style="padding:16px; text-align:center;">
+        <p style="font-size:20px; opacity:0.6;">รวบรวมเป็นไฟล์ .exe เดียว</p>
+        <p style="font-size:24px; font-weight:700; color:var(--egat-gold);">RiskFileChecker.exe</p>
+        <p style="font-size:20px; opacity:0.6;">ด้วย PyInstaller</p>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bar"></div>
+  <span class="slide-num">4 / 16</span>
+</section>
+
+<!-- SLIDE 05: PDF Extraction -->
+<section class="slide-white" data-screen-label="05 การอ่าน PDF" style="display:flex; flex-direction:column; padding: 72px 100px; gap:36px; position:relative;">
+  <div>
+    <span class="tag tag-purple">ฟังก์ชันที่ 1</span>
+    <h2 style="font-size:48px; margin-top:20px; color:var(--egat-purple);">การอ่านข้อความจากเอกสาร PDF</h2>
+  </div>
+  <div class="grid-2" style="flex:1;">
+    <div class="card-white" style="display:flex; flex-direction:column; gap:20px;">
+      <div style="display:flex; gap:12px; align-items:center;">
+        <div class="icon-circle icon-purple">📄</div>
+        <h3 style="font-size:28px; color:var(--egat-purple);">PDF ดิจิทัล</h3>
+      </div>
+      <p style="font-size:24px; color:#555; line-height:1.7;">เอกสารที่สร้างจากคอมพิวเตอร์ เช่น ส่งออกจาก Word หรือ Excel มีข้อความฝังอยู่ในไฟล์</p>
+      <div style="background:#EDF2F8; border-radius:12px; padding:20px;">
+        <p style="font-size:22px; font-weight:600; color:var(--egat-purple);">วิธีการ</p>
+        <p style="font-size:22px; color:#555; margin-top:8px;">ใช้ <strong>PyMuPDF</strong> ดึงข้อความโดยตรง เปรียบเสมือนการคัดลอกข้อความจากหน้าจอ</p>
+      </div>
+      <div style="display:flex; gap:12px; align-items:center; margin-top:auto;">
+        <span style="font-size:32px;">⚡</span>
+        <p style="font-size:24px; font-weight:600; color:var(--egat-purple);">รวดเร็ว ประมวลผลเกือบทันที</p>
+      </div>
+    </div>
+    <div class="card-white" style="display:flex; flex-direction:column; gap:20px;">
+      <div style="display:flex; gap:12px; align-items:center;">
+        <div class="icon-circle icon-gold">🖼</div>
+        <h3 style="font-size:28px; color:var(--egat-purple);">PDF จากการสแกน</h3>
+      </div>
+      <p style="font-size:24px; color:#555; line-height:1.7;">เอกสารที่ได้จากเครื่องสแกน หรือเป็นการนำภาพถ่ายมาใส่ ไม่มีข้อความฝังอยู่ มีเพียงรูปภาพของตัวหนังสือ</p>
+      <div style="background:#FFF8E8; border-radius:12px; padding:20px;">
+        <p style="font-size:22px; font-weight:600; color:var(--egat-gold);">วิธีการ</p>
+        <p style="font-size:22px; color:#555; margin-top:8px;">แปลงหน้าเป็นภาพ แล้วใช้ <strong>Tesseract OCR</strong> อ่านข้อความภาษาไทยและอังกฤษ</p>
+      </div>
+      <div style="display:flex; gap:12px; align-items:center; margin-top:auto;">
+        <span style="font-size:32px;">🐢</span>
+        <p style="font-size:24px; font-weight:600; color:#888;">ใช้เวลามากกว่า ต้องแปลงภาพเป็นตัวอักษร</p>
+      </div>
+    </div>
+  </div>
+  <div style="background:#EDF2F8; border-radius:12px; padding:16px 28px; display:flex; align-items:center; gap:16px;">
+    <span style="font-size:28px;">💡</span>
+    <p style="font-size:23px; color:#555;"><strong>เกณฑ์การจำแนก PDF ดิจิทัลและ PDF จากการสแกน:</strong> หากหน้าใดมีข้อความน้อยกว่า 100 ตัวอักษร ระบบจะถือว่าเป็นภาพสแกน และส่งให้ OCR ประมวลผลโดยอัตโนมัติ</p>
+  </div>
+  <div class="footer-bar"></div>
+  <span class="slide-num-dark">5 / 16</span>
+</section>
+
+<!-- SLIDE 06: Chunking -->
+<section class="slide-purple" data-screen-label="06 การแบ่งข้อความ" style="display:flex; flex-direction:column; padding: 72px 100px; gap:36px; position:relative;">
+  <div>
+    <span class="tag tag-white">ฟังก์ชันที่ 2</span>
+    <h2 style="font-size:48px; margin-top:20px;">การแบ่งข้อความ (Chunking)</h2>
+    <p style="font-size:26px; opacity:0.8; margin-top:12px;">AI แต่ละโมเดลมีขีดจำกัดปริมาณข้อความที่รับได้ต่อครั้ง หากเอกสารมีขนาดใหญ่ ต้องแบ่งเป็นส่วนย่อยก่อน</p>
+  </div>
+  <div class="grid-2" style="flex:1;">
+    <div style="display:flex; flex-direction:column; gap:20px;">
+      <div class="card">
+        <p style="font-size:24px; font-weight:700; color:var(--egat-gold);">ขนาดข้อความ (Chunk Size)</p>
+        <p class="num-big" style="margin-top:8px;">24,000</p>
+        <p style="font-size:24px; opacity:0.7;">ตัวอักษร (ประมาณ 6,000–8,000 คำ)</p>
+      </div>
+      <div class="card">
+        <p style="font-size:24px; font-weight:700; color:var(--egat-gold);">ข้อความทับซ้อน (Overlap)</p>
+        <p class="num-big" style="margin-top:8px;">2,000</p>
+        <p style="font-size:24px; opacity:0.7;">ตัวอักษร (ป้องกันเนื้อหาตรงรอยต่อสูญหาย)</p>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:20px;">
+      <div class="card" style="flex:1;">
+        <p style="font-size:24px; font-weight:700; color:var(--egat-gold); margin-bottom:16px;">หลักการทำงาน</p>
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <div style="display:flex; gap:12px; align-items:flex-start;">
+            <span style="font-size:28px; color:var(--egat-gold); font-weight:800;">1</span>
+            <p style="font-size:23px; opacity:0.9;">แบ่งข้อความตามตัวคั่นหน้า [หน้า N] เพื่อไม่ตัดข้ามหน้า</p>
+          </div>
+          <div style="display:flex; gap:12px; align-items:flex-start;">
+            <span style="font-size:28px; color:var(--egat-gold); font-weight:800;">2</span>
+            <p style="font-size:23px; opacity:0.9;">รวมหน้าจนครบ 24,000 ตัวอักษร แล้วเริ่มชิ้นใหม่</p>
+          </div>
+          <div style="display:flex; gap:12px; align-items:flex-start;">
+            <span style="font-size:28px; color:var(--egat-gold); font-weight:800;">3</span>
+            <p style="font-size:23px; opacity:0.9;">ทำซ้ำจนครบทุกหน้าของเอกสาร</p>
+          </div>
+          <div style="display:flex; gap:12px; align-items:flex-start;">
+            <span style="font-size:28px; color:var(--egat-gold); font-weight:800;">4</span>
+            <p style="font-size:23px; opacity:0.9;">ส่งชิ้นข้อความทีละ Chunk ให้ AI วิเคราะห์</p>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="background:rgba(212,168,67,0.15); border-color:rgba(212,168,67,0.3);">
+        <p style="font-size:23px;">⚡ <strong>เทคนิคเพิ่มความเร็ว:</strong> หาก AI พบว่ารายการนั้น "ผ่าน" ใน Chunk ใดแล้ว จะหยุดทันทีโดยไม่ตรวจ Chunk ที่เหลือ</p>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bar"></div>
+  <span class="slide-num">6 / 16</span>
+</section>
+
+<!-- SLIDE 07: AI Analysis -->
+<section class="slide-white" data-screen-label="07 การวิเคราะห์ด้วย AI" style="display:flex; flex-direction:column; padding: 72px 100px; gap:32px; position:relative;">
+  <div>
+    <span class="tag tag-purple">ฟังก์ชันที่ 3</span>
+    <h2 style="font-size:48px; margin-top:20px; color:var(--egat-purple);">การวิเคราะห์ด้วย AI</h2>
+  </div>
+  <div style="display:flex; gap:32px; flex:1;">
+    <div style="flex:1; display:flex; flex-direction:column; gap:20px;">
+      <p style="font-size:25px; color:#555; line-height:1.7;">ระบบสร้างคำสั่ง (Prompt) ที่มีโครงสร้างชัดเจน ส่งให้ AI ตัดสินทีละรายการ โดยกำหนดเกณฑ์อย่างเข้มงวด</p>
+      <div class="card-white" style="flex:1; display:flex; flex-direction:column; gap:16px;">
+        <p style="font-size:22px; font-weight:700; color:var(--egat-purple);">สิ่งที่ส่งให้ AI ทุกครั้ง</p>
+        <div style="display:flex; gap:12px; align-items:center;"><div style="width:8px; height:8px; border-radius:50%; background:var(--egat-purple);"></div><p style="font-size:23px;">บทบาท "ผู้ตรวจสอบเอกสารที่เข้มงวด"</p></div>
+        <div style="display:flex; gap:12px; align-items:center;"><div style="width:8px; height:8px; border-radius:50%; background:var(--egat-purple);"></div><p style="font-size:23px;">ข้อกำหนดที่ต้องตรวจ (จาก Checklist)</p></div>
+        <div style="display:flex; gap:12px; align-items:center;"><div style="width:8px; height:8px; border-radius:50%; background:var(--egat-purple);"></div><p style="font-size:23px;">ข้อความจากเอกสาร (แต่ละชิ้น)</p></div>
+        <div style="display:flex; gap:12px; align-items:center;"><div style="width:8px; height:8px; border-radius:50%; background:var(--egat-purple);"></div><p style="font-size:23px;">เกณฑ์ตัดสิน 9 ข้อ ที่ต้องปฏิบัติอย่างเคร่งครัด</p></div>
+        <div style="display:flex; gap:12px; align-items:center;"><div style="width:8px; height:8px; border-radius:50%; background:var(--egat-purple);"></div><p style="font-size:23px;">รูปแบบคำตอบ JSON ที่กำหนดไว้ชัดเจน</p></div>
+      </div>
+    </div>
+    <div style="width:440px; display:flex; flex-direction:column; gap:16px;">
+      <p style="font-size:22px; font-weight:700; color:var(--egat-purple);">AI ต้องตอบกลับเป็น JSON</p>
+      <div style="background:var(--egat-dark); border-radius:12px; padding:28px; font-family:monospace; font-size:21px; color:#D0D8E4; line-height:1.8;">
+        {<br/>
+        &nbsp;&nbsp;"status": "<span style="color:var(--egat-gold);">pass</span>" หรือ "<span style="color:#E57373;">fail</span>"<br/>
+        &nbsp;&nbsp;"reasoning": "<span style="color:#81C784;">เหตุผลเป็นภาษาไทย</span>"<br/>
+        &nbsp;&nbsp;"evidence": "<span style="color:#81C784;">ข้อความจากเอกสาร</span>"<br/>
+        &nbsp;&nbsp;"found_in_document": <span style="color:var(--egat-gold);">true/false</span><br/>
+        }
+      </div>
+      <div class="card-white" style="padding:20px;">
+        <p style="font-size:21px; color:#555;"><strong style="color:var(--egat-purple);">กลไกป้องกัน:</strong> หาก AI ตอบไม่ตรงรูปแบบ ระบบมี regex fallback แยกแต่ละฟิลด์ออกมาได้ แม้ JSON จะถูกตัดกลางคัน</p>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bar"></div>
+  <span class="slide-num-dark">7 / 16</span>
+</section>
+
+<!-- SLIDE 08: Multi-AI Support -->
+<section class="slide-dark" data-screen-label="08 รองรับ AI หลายประเภท" style="display:flex; flex-direction:column; padding: 72px 100px; gap:36px; position:relative;">
+  <div>
+    <span class="tag tag-gold">ฟังก์ชันที่ 4</span>
+    <h2 style="font-size:48px; margin-top:20px;">รองรับ AI หลายผู้ให้บริการ</h2>
+  </div>
+  <div class="grid-3" style="flex:1;">
+    <div class="card" style="display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; gap:12px; align-items:center;">
+        <div class="icon-circle icon-white">🏠</div>
+        <h3 style="font-size:26px;">Local AI (Ollama)</h3>
+      </div>
+      <p style="font-size:22px; opacity:0.8; line-height:1.7;">ใช้โมเดล Gemma 4 (26B) จาก Google ประมวลผลภายในเครื่อง ข้อมูลไม่ออกนอกองค์กร</p>
+      <div style="margin-top:auto; display:flex; flex-direction:column; gap:8px;">
+        <div style="display:flex; gap:8px; align-items:center;"><span style="color:#81C784;">✓</span><p style="font-size:21px; opacity:0.8;">เหมาะกับเอกสารลับ</p></div>
+        <div style="display:flex; gap:8px; align-items:center;"><span style="color:#81C784;">✓</span><p style="font-size:21px; opacity:0.8;">ไม่มีค่าใช้จ่ายต่อครั้ง</p></div>
+        <div style="display:flex; gap:8px; align-items:center;"><span style="color:#81C784;">✓</span><p style="font-size:21px; opacity:0.8;">ใช้งานแบบออฟไลน์ได้</p></div>
+        <div style="display:flex; gap:8px; align-items:center;"><span style="color:#E57373;">✗</span><p style="font-size:21px; opacity:0.8;">ต้องการคอมพิวเตอร์สเปคสูง (RAM 16 GB ขึ้นไป)</p></div>
+      </div>
+    </div>
+    <div class="card" style="display:flex; flex-direction:column; gap:16px; border-color:rgba(212,168,67,0.3);">
+      <div style="display:flex; gap:12px; align-items:center;">
+        <div class="icon-circle icon-gold">☁</div>
+        <h3 style="font-size:26px;">Google Gemini</h3>
+      </div>
+      <p style="font-size:22px; opacity:0.8; line-height:1.7;">เรียกใช้ผ่าน Gemini API รองรับหลายโมเดล เช่น Gemini 3.1 Pro, Gemini 3 Flash</p>
+      <div style="margin-top:auto; display:flex; flex-direction:column; gap:8px;">
+        <div style="display:flex; gap:8px; align-items:center;"><span style="color:#81C784;">✓</span><p style="font-size:21px; opacity:0.8;">ตอบเร็ว แม่นยำสูง</p></div>
+        <div style="display:flex; gap:8px; align-items:center;"><span style="color:#81C784;">✓</span><p style="font-size:21px; opacity:0.8;">ใช้กับเครื่องสเปคต่ำได้</p></div>
+        <div style="display:flex; gap:8px; align-items:center;"><span style="color:#81C784;">✓</span><p style="font-size:21px; opacity:0.8;">เพิ่มโมเดลเองผ่าน UI ได้</p></div>
+        <div style="display:flex; gap:8px; align-items:center;"><span style="color:#E57373;">✗</span><p style="font-size:21px; opacity:0.8;">ข้อมูลถูกส่งออกนอกเครื่อง</p></div>
+      </div>
+    </div>
+    <div class="card" style="display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; gap:12px; align-items:center;">
+        <div class="icon-circle icon-white">🌐</div>
+        <h3 style="font-size:26px;">OpenAI (GPT)</h3>
+      </div>
+      <p style="font-size:22px; opacity:0.8; line-height:1.7;">เรียกใช้ผ่าน OpenAI API รองรับ GPT-4o, GPT-5 และ o-series</p>
+      <div style="margin-top:auto; display:flex; flex-direction:column; gap:8px;">
+        <div style="display:flex; gap:8px; align-items:center;"><span style="color:#81C784;">✓</span><p style="font-size:21px; opacity:0.8;">ตอบเร็ว แม่นยำสูง</p></div>
+        <div style="display:flex; gap:8px; align-items:center;"><span style="color:#81C784;">✓</span><p style="font-size:21px; opacity:0.8;">JSON Schema (Strict Mode)</p></div>
+        <div style="display:flex; gap:8px; align-items:center;"><span style="color:#81C784;">✓</span><p style="font-size:21px; opacity:0.8;">เพิ่มโมเดลเองผ่าน UI ได้</p></div>
+        <div style="display:flex; gap:8px; align-items:center;"><span style="color:#E57373;">✗</span><p style="font-size:21px; opacity:0.8;">ข้อมูลถูกส่งออกนอกเครื่อง</p></div>
+      </div>
+    </div>
+  </div>
+  <div style="background:rgba(212,168,67,0.1); border:1px solid rgba(212,168,67,0.25); border-radius:12px; padding:16px 28px; display:flex; align-items:center; gap:16px;">
+    <span style="font-size:26px;">💡</span>
+    <p style="font-size:23px; opacity:0.85;"><strong>คำแนะนำ:</strong> เอกสารลับภายในองค์กรใช้ Local AI / เอกสารทั่วไป ต้องการความเร็วและแม่นยำใช้ Gemini หรือ OpenAI</p>
+  </div>
+  <div class="footer-bar"></div>
+  <span class="slide-num">8 / 16</span>
+</section>
+
+<!-- SLIDE 09: Error Handling & Robustness -->
+<section class="slide-white" data-screen-label="09 ความทนทานของระบบ" style="display:flex; flex-direction:column; padding: 72px 100px; gap:36px; position:relative;">
+  <div>
+    <span class="tag tag-purple">ฟังก์ชันที่ 5</span>
+    <h2 style="font-size:48px; margin-top:20px; color:var(--egat-purple);">กลไกรับมือข้อผิดพลาดอัตโนมัติ</h2>
+  </div>
+  <div class="grid-2" style="flex:1;">
+    <div style="display:flex; flex-direction:column; gap:20px;">
+      <div class="card-white">
+        <p style="font-size:24px; font-weight:700; color:var(--egat-purple);">Exponential Backoff Retry</p>
+        <p style="font-size:22px; color:#555; margin-top:8px; line-height:1.7;">เมื่อ Gemini หรือ OpenAI ตอบกลับด้วยรหัส 429 (เกินโควตา) หรือ 503 (เซิร์ฟเวอร์เต็ม) ระบบจะรอแล้วลองใหม่โดยเพิ่มเวลารอเป็นทวีคูณ สูงสุด 5 ครั้ง</p>
+        <div style="display:flex; gap:8px; margin-top:12px; align-items:center;">
+          <span style="background:var(--egat-purple); color:#fff; padding:4px 12px; border-radius:6px; font-size:20px;">1 วินาที</span>
+          <span style="color:#888;">→</span>
+          <span style="background:var(--egat-purple); color:#fff; padding:4px 12px; border-radius:6px; font-size:20px;">2 วินาที</span>
+          <span style="color:#888;">→</span>
+          <span style="background:var(--egat-purple); color:#fff; padding:4px 12px; border-radius:6px; font-size:20px;">4 วินาที</span>
+          <span style="color:#888;">→</span>
+          <span style="background:var(--egat-purple); color:#fff; padding:4px 12px; border-radius:6px; font-size:20px;">8 วินาที</span>
+          <span style="color:#888;">→</span>
+          <span style="background:var(--egat-purple); color:#fff; padding:4px 12px; border-radius:6px; font-size:20px;">16 วินาที</span>
+        </div>
+      </div>
+      <div class="card-white">
+        <p style="font-size:24px; font-weight:700; color:var(--egat-purple);">JSON Fallback Parser</p>
+        <p style="font-size:22px; color:#555; margin-top:8px; line-height:1.7;">หาก AI ส่ง JSON ที่ไม่สมบูรณ์ (เช่น ถูกตัดกลางคัน) ระบบใช้ Regex แยกค่าแต่ละฟิลด์ออกมาทีละตัว เพื่อให้ได้ผลลัพธ์ออกมา</p>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:20px;">
+      <div class="card-white">
+        <p style="font-size:24px; font-weight:700; color:var(--egat-purple);">Thai Language Retry</p>
+        <p style="font-size:22px; color:#555; margin-top:8px; line-height:1.7;">ตรวจสอบว่าคำตอบที่ AI ตอบเป็นภาษาไทยหรือไม่ (ต้องมีตัวอักษรไทยอย่างน้อย 15%) หากเป็นภาษาอังกฤษ ระบบจะส่งคำสั่งใหม่ด้วยข้อความเน้นย้ำกว่าเดิม</p>
+      </div>
+      <div class="card-white">
+        <p style="font-size:24px; font-weight:700; color:var(--egat-purple);">Sanitize Reasoning</p>
+        <p style="font-size:22px; color:#555; margin-top:8px; line-height:1.7;">บางครั้ง AI อาจสร้างข้อความซ้ำวนไปมา ระบบจะตรวจจับและตัดส่วนที่ซ้ำออกอัตโนมัติ ทั้งระดับตัวอักษรและระดับคำ</p>
+      </div>
+      <div class="card-white">
+        <p style="font-size:24px; font-weight:700; color:var(--egat-purple);">Pydantic Validation</p>
+        <p style="font-size:22px; color:#555; margin-top:8px; line-height:1.7;">ตรวจสอบโครงสร้าง Checklist ก่อนประมวลผล หากไม่ถูกต้องจะแจ้งกลับทันทีพร้อมรายละเอียดข้อผิดพลาด</p>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bar"></div>
+  <span class="slide-num-dark">9 / 16</span>
+</section>
+
+<!-- SLIDE 10: SSE Streaming -->
+<section class="slide-purple" data-screen-label="10 การแสดงผล Real-time" style="display:flex; flex-direction:column; padding: 72px 100px; gap:36px; position:relative;">
+  <div>
+    <span class="tag tag-white">ฟังก์ชันที่ 6</span>
+    <h2 style="font-size:48px; margin-top:20px;">การแสดงผลแบบ Real-time (SSE)</h2>
+  </div>
+  <div style="display:flex; gap:40px; flex:1; align-items:center;">
+    <div style="flex:1; display:flex; flex-direction:column; gap:24px;">
+      <p style="font-size:26px; opacity:0.9; line-height:1.7;">ผู้ใช้ไม่ต้องรอจนกว่าการตรวจสอบทั้งหมดจะเสร็จสิ้น ผลลัพธ์แต่ละรายการจะปรากฏบนหน้าจอทันทีที่ AI วิเคราะห์เสร็จ</p>
+      <div class="card" style="display:flex; flex-direction:column; gap:20px;">
+        <p style="font-size:24px; font-weight:700; color:var(--egat-gold);">Server-Sent Events (SSE)</p>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <div style="display:flex; gap:12px; align-items:flex-start;">
+            <span style="color:var(--egat-gold); font-weight:800; font-size:24px;">1</span>
+            <p style="font-size:23px; opacity:0.9;">Backend ส่ง Event "start" แจ้งจำนวนรายการทั้งหมด</p>
+          </div>
+          <div style="display:flex; gap:12px; align-items:flex-start;">
+            <span style="color:var(--egat-gold); font-weight:800; font-size:24px;">2</span>
+            <p style="font-size:23px; opacity:0.9;">ส่ง Event "item" ทุกครั้งที่ AI ตรวจเสร็จ 1 รายการ</p>
+          </div>
+          <div style="display:flex; gap:12px; align-items:flex-start;">
+            <span style="color:var(--egat-gold); font-weight:800; font-size:24px;">3</span>
+            <p style="font-size:23px; opacity:0.9;">Frontend รับ Event แล้วแสดงผลลัพธ์ทันที</p>
+          </div>
+          <div style="display:flex; gap:12px; align-items:flex-start;">
+            <span style="color:var(--egat-gold); font-weight:800; font-size:24px;">4</span>
+            <p style="font-size:23px; opacity:0.9;">ส่ง Event "done" พร้อมสรุปคะแนนเมื่อเสร็จทั้งหมด</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="width:400px; display:flex; flex-direction:column; gap:16px;">
+      <div class="card" style="padding:20px; display:flex; gap:12px; align-items:center;">
+        <span style="font-size:28px; color:#81C784;">✓</span>
+        <div><p style="font-size:22px; font-weight:600;">หัวข้อ 1.1 — นโยบายความเสี่ยง</p><p style="font-size:18px; opacity:0.6;">FOUND +5 คะแนน</p></div>
+      </div>
+      <div class="card" style="padding:20px; display:flex; gap:12px; align-items:center;">
+        <span style="font-size:28px; color:#81C784;">✓</span>
+        <div><p style="font-size:22px; font-weight:600;">หัวข้อ 1.2 — แผนจัดการ</p><p style="font-size:18px; opacity:0.6;">FOUND +3 คะแนน</p></div>
+      </div>
+      <div class="card" style="padding:20px; display:flex; gap:12px; align-items:center; border-color:rgba(229,115,115,0.3); background:rgba(229,115,115,0.08);">
+        <span style="font-size:28px; color:#E57373;">✗</span>
+        <div><p style="font-size:22px; font-weight:600;">หัวข้อ 2.1 — ผลการติดตาม</p><p style="font-size:18px; opacity:0.6;">MISSING 0 คะแนน</p></div>
+      </div>
+      <div class="card" style="padding:20px; display:flex; gap:12px; align-items:center; opacity:0.4;">
+        <span style="font-size:24px; animation: spin 1s linear infinite;">⏳</span>
+        <div><p style="font-size:22px; font-weight:600;">กำลังตรวจสอบ 3/8...</p><p style="font-size:18px; opacity:0.6;">โปรดรอสักครู่</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bar"></div>
+  <span class="slide-num">10 / 16</span>
+</section>
+
+<!-- SLIDE 11: Excel Export -->
+<section class="slide-white" data-screen-label="11 การส่งออก Excel" style="display:flex; flex-direction:column; padding: 72px 100px; gap:36px; position:relative;">
+  <div>
+    <span class="tag tag-purple">ฟังก์ชันที่ 7</span>
+    <h2 style="font-size:48px; margin-top:20px; color:var(--egat-purple);">การส่งออกผลลัพธ์เป็น Excel</h2>
+  </div>
+  <div class="grid-2" style="flex:1;">
+    <div class="card-white" style="display:flex; flex-direction:column; gap:20px;">
+      <div style="display:flex; gap:12px; align-items:center;">
+        <div class="icon-circle icon-purple" style="font-size:26px;">📊</div>
+        <h3 style="font-size:28px; color:var(--egat-purple);">ชีทที่ 1 สรุปผล</h3>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div style="display:flex; justify-content:space-between; padding:10px 16px; background:#EDF2F8; border-radius:8px;">
+          <span style="font-size:22px; font-weight:600;">ชื่อไฟล์</span><span style="font-size:22px; color:#555;">risk_report.pdf</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; padding:10px 16px; background:#EDF2F8; border-radius:8px;">
+          <span style="font-size:22px; font-weight:600;">วันที่ตรวจสอบ</span><span style="font-size:22px; color:#555;">06/05/2026 14:30</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; padding:10px 16px; background:#EDF2F8; border-radius:8px;">
+          <span style="font-size:22px; font-weight:600;">จำนวนรายการ</span><span style="font-size:22px; color:#555;">20 ข้อ</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; padding:10px 16px; background:#EDF2F8; border-radius:8px;">
+          <span style="font-size:22px; font-weight:600;">ผ่าน / ไม่ผ่าน</span><span style="font-size:22px; color:#555;">16 / 4</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; padding:10px 16px; background:#EDF2F8; border-radius:8px;">
+          <span style="font-size:22px; font-weight:600;">คะแนนรวม</span><span style="font-size:22px; color:var(--egat-purple); font-weight:700;">42 / 50</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-white" style="display:flex; flex-direction:column; gap:20px;">
+      <div style="display:flex; gap:12px; align-items:center;">
+        <div class="icon-circle icon-gold" style="font-size:26px;">📋</div>
+        <h3 style="font-size:28px; color:var(--egat-purple);">ชีทที่ 2 รายละเอียด</h3>
+      </div>
+      <div style="overflow:hidden; border-radius:8px; border:1px solid #D0D8E4;">
+        <table style="width:100%; border-collapse:collapse; font-size:20px;">
+          <tr style="background:var(--egat-purple); color:#fff;">
+            <th style="padding:10px 12px; text-align:left;">หัวข้อ</th>
+            <th style="padding:10px 8px; text-align:center; width:60px;">ผล</th>
+            <th style="padding:10px 12px; text-align:left;">เหตุผล</th>
+          </tr>
+          <tr style="background:#E6F4EA;">
+            <td style="padding:10px 12px;">นโยบายบริหารความเสี่ยง</td>
+            <td style="padding:10px 8px; text-align:center; color:#137333; font-weight:700;">FOUND</td>
+            <td style="padding:10px 12px; color:#555;">พบเนื้อหาครอบคลุม...</td>
+          </tr>
+          <tr style="background:#FCE8E6;">
+            <td style="padding:10px 12px;">ผลการติดตามรายไตรมาส</td>
+            <td style="padding:10px 8px; text-align:center; color:#C5221F; font-weight:700;">MISSING</td>
+            <td style="padding:10px 12px; color:#555;">ไม่พบเนื้อหา...</td>
+          </tr>
+          <tr style="background:#E6F4EA;">
+            <td style="padding:10px 12px;">แผนบรรเทาความเสี่ยง</td>
+            <td style="padding:10px 8px; text-align:center; color:#137333; font-weight:700;">FOUND</td>
+            <td style="padding:10px 12px; color:#555;">มีแผนจัดการ...</td>
+          </tr>
+        </table>
+      </div>
+      <p style="font-size:21px; color:#888; margin-top:auto;">สร้างด้วย <strong>openpyxl</strong> แต่ละแถวมีสีแยกตามสถานะ ผ่าน (สีเขียว) / ไม่ผ่าน (สีแดง)</p>
+    </div>
+  </div>
+  <div class="footer-bar"></div>
+  <span class="slide-num-dark">11 / 16</span>
+</section>
+
+<!-- SLIDE 12: Checklist & Preset -->
+<section class="slide-dark" data-screen-label="12 Checklist และ Preset" style="display:flex; flex-direction:column; padding: 72px 100px; gap:36px; position:relative;">
+  <div>
+    <span class="tag tag-gold">ฟังก์ชันเสริม</span>
+    <h2 style="font-size:48px; margin-top:20px;">ระบบจัดการ Checklist และ Preset</h2>
+  </div>
+  <div class="grid-2" style="flex:1;">
+    <div class="card" style="display:flex; flex-direction:column; gap:20px;">
+      <p style="font-size:26px; font-weight:700; color:var(--egat-gold);">Checklist แบบยืดหยุ่น</p>
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <div style="display:flex; gap:12px; align-items:flex-start;">
+          <span style="color:var(--egat-gold);">●</span>
+          <p style="font-size:23px; opacity:0.9;">เพิ่ม/ลบหัวข้อหลักได้ไม่จำกัด</p>
+        </div>
+        <div style="display:flex; gap:12px; align-items:flex-start;">
+          <span style="color:var(--egat-gold);">●</span>
+          <p style="font-size:23px; opacity:0.9;">แต่ละหัวข้อมีรายการย่อยได้หลายข้อ</p>
+        </div>
+        <div style="display:flex; gap:12px; align-items:flex-start;">
+          <span style="color:var(--egat-gold);">●</span>
+          <p style="font-size:23px; opacity:0.9;">กำหนดคะแนนเต็มของแต่ละรายการย่อยเอง</p>
+        </div>
+        <div style="display:flex; gap:12px; align-items:flex-start;">
+          <span style="color:var(--egat-gold);">●</span>
+          <p style="font-size:23px; opacity:0.9;">ตรวจสอบข้อมูลด้วย Pydantic ก่อนส่ง AI</p>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="display:flex; flex-direction:column; gap:20px;">
+      <p style="font-size:26px; font-weight:700; color:var(--egat-gold);">Preset บันทึกรายการตรวจสอบ</p>
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <div style="display:flex; gap:12px; align-items:flex-start;">
+          <span style="color:var(--egat-gold);">●</span>
+          <p style="font-size:23px; opacity:0.9;">บันทึก Checklist เป็น Preset ตั้งชื่อได้</p>
+        </div>
+        <div style="display:flex; gap:12px; align-items:flex-start;">
+          <span style="color:var(--egat-gold);">●</span>
+          <p style="font-size:23px; opacity:0.9;">โหลด Preset กลับมาใช้ได้ทันที</p>
+        </div>
+        <div style="display:flex; gap:12px; align-items:flex-start;">
+          <span style="color:var(--egat-gold);">●</span>
+          <p style="font-size:23px; opacity:0.9;">ลบ Preset ที่ไม่ใช้แล้วได้</p>
+        </div>
+        <div style="display:flex; gap:12px; align-items:flex-start;">
+          <span style="color:var(--egat-gold);">●</span>
+          <p style="font-size:23px; opacity:0.9;">จัดเก็บใน Local Storage ของเบราว์เซอร์</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="padding:24px; display:flex; gap:24px; align-items:center;">
+    <div class="icon-circle icon-gold">⚙</div>
+    <div>
+      <p style="font-size:24px; font-weight:700; color:var(--egat-gold);">เพิ่มโมเดล AI เองผ่าน UI</p>
+      <p style="font-size:22px; opacity:0.7; margin-top:4px;">ผู้ใช้สามารถเพิ่มโมเดล OpenAI หรือ Gemini รุ่นใหม่ ๆ ได้เอง โดยไม่ต้องแก้ไขโค้ด ข้อมูลจัดเก็บใน Local Storage เช่นเดียวกัน</p>
+    </div>
+  </div>
+  <div class="footer-bar"></div>
+  <span class="slide-num">12 / 16</span>
+</section>
+
+<!-- SLIDE 13: Test Results -->
+<section class="slide-white" data-screen-label="13 ผลทดสอบ" style="display:flex; flex-direction:column; padding: 72px 100px; gap:32px; position:relative;">
+  <div>
+    <span class="tag tag-purple">ผลการทดสอบ</span>
+    <h2 style="font-size:48px; margin-top:20px; color:var(--egat-purple);">ประสิทธิภาพของระบบ</h2>
+  </div>
+  <div class="grid-2" style="flex:1;">
+    <div style="display:flex; flex-direction:column; gap:20px;">
+      <h3 style="font-size:28px; color:var(--egat-purple);">ความเร็ว</h3>
+      <div style="overflow:hidden; border-radius:12px; border:1px solid #D0D8E4;">
+        <table class="tbl">
+          <tr><th>การอ่าน PDF</th><th style="width:140px; text-align:center;">เวลา</th></tr>
+          <tr><td>ไม่มี OCR (ดิจิทัล)</td><td style="text-align:center; font-weight:700; color:var(--egat-purple);">0:27 นาที</td></tr>
+          <tr><td>มี OCR (สแกน)</td><td style="text-align:center; font-weight:700; color:var(--egat-gold);">4:41 นาที</td></tr>
+        </table>
+      </div>
+      <div style="overflow:hidden; border-radius:12px; border:1px solid #D0D8E4;">
+        <table class="tbl">
+          <tr><th>โมเดล AI</th><th style="width:140px; text-align:center;">เวลา</th></tr>
+          <tr><td>Gemma 4 26B (Local)</td><td style="text-align:center; font-weight:700;">20:26 นาที</td></tr>
+          <tr><td>GPT-5</td><td style="text-align:center; font-weight:700;">14:41 นาที</td></tr>
+          <tr><td>GPT-4o</td><td style="text-align:center; font-weight:700; color:var(--egat-purple);">6:32 นาที</td></tr>
+        </table>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:20px;">
+      <h3 style="font-size:28px; color:var(--egat-purple);">ความแม่นยำ</h3>
+      <div class="card-white" style="flex:1; display:flex; flex-direction:column; gap:16px;">
+        <div>
+          <p style="font-size:23px; font-weight:600; color:var(--egat-purple);">โมเดลขนาดใหญ่</p>
+          <p style="font-size:21px; color:#555; margin-top:4px; line-height:1.6;">เข้าใจบริบทและความหมายแฝงได้ดี สามารถตีความว่าเนื้อหาครอบคลุมข้อกำหนดหรือไม่ แม้ไม่ได้ใช้คำตรงตัว</p>
+        </div>
+        <div style="border-top:1px solid #D0D8E4; padding-top:16px;">
+          <p style="font-size:23px; font-weight:600; color:var(--egat-purple);">โมเดลขนาดเล็ก</p>
+          <p style="font-size:21px; color:#555; margin-top:4px; line-height:1.6;">ตอบเร็วกว่าและมีค่าใช้จ่ายต่ำกว่า แต่อาจตรวจสอบได้เฉพาะคำที่ตรงกันเท่านั้น</p>
+        </div>
+        <div style="border-top:1px solid #D0D8E4; padding-top:16px;">
+          <p style="font-size:23px; font-weight:600; color:var(--egat-purple);">ผล OCR กับเอกสารสแกน</p>
+          <p style="font-size:21px; color:#555; margin-top:4px; line-height:1.6;">ระบบสามารถอ่านเอกสาร GRC ของ กฟผ. ที่เป็นภาพสแกนได้สำเร็จด้วย OCR ในขณะที่โหมดดิจิทัลไม่สามารถอ่านได้</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bar"></div>
+  <span class="slide-num-dark">13 / 16</span>
+</section>
+
+<!-- SLIDE 14: Tech Stack -->
+<section class="slide-purple" data-screen-label="14 เทคโนโลยี" style="display:flex; flex-direction:column; padding: 72px 100px; gap:36px; position:relative;">
+  <div>
+    <span class="tag tag-white">เทคโนโลยี</span>
+    <h2 style="font-size:48px; margin-top:20px;">สรุปเทคโนโลยีที่ใช้ในระบบ</h2>
+  </div>
+  <div class="grid-3" style="flex:1;">
+    <div class="card" style="display:flex; flex-direction:column; gap:14px;">
+      <p style="font-size:24px; font-weight:700; color:var(--egat-gold);">Backend</p>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div style="display:flex; gap:10px; align-items:center;"><div style="width:6px; height:6px; border-radius:50%; background:var(--egat-gold);"></div><p style="font-size:22px;">FastAPI — Web Framework</p></div>
+        <div style="display:flex; gap:10px; align-items:center;"><div style="width:6px; height:6px; border-radius:50%; background:var(--egat-gold);"></div><p style="font-size:22px;">Uvicorn — ASGI Server</p></div>
+        <div style="display:flex; gap:10px; align-items:center;"><div style="width:6px; height:6px; border-radius:50%; background:var(--egat-gold);"></div><p style="font-size:22px;">Pydantic — Data Validation</p></div>
+        <div style="display:flex; gap:10px; align-items:center;"><div style="width:6px; height:6px; border-radius:50%; background:var(--egat-gold);"></div><p style="font-size:22px;">httpx — HTTP Client (Async)</p></div>
+        <div style="display:flex; gap:10px; align-items:center;"><div style="width:6px; height:6px; border-radius:50%; background:var(--egat-gold);"></div><p style="font-size:22px;">Jinja2 — Template Engine</p></div>
+      </div>
+    </div>
+    <div class="card" style="display:flex; flex-direction:column; gap:14px;">
+      <p style="font-size:24px; font-weight:700; color:var(--egat-gold);">การประมวลผลเอกสาร</p>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div style="display:flex; gap:10px; align-items:center;"><div style="width:6px; height:6px; border-radius:50%; background:var(--egat-gold);"></div><p style="font-size:22px;">PyMuPDF — อ่าน PDF</p></div>
+        <div style="display:flex; gap:10px; align-items:center;"><div style="width:6px; height:6px; border-radius:50%; background:var(--egat-gold);"></div><p style="font-size:22px;">Tesseract OCR — อ่านภาพสแกน</p></div>
+        <div style="display:flex; gap:10px; align-items:center;"><div style="width:6px; height:6px; border-radius:50%; background:var(--egat-gold);"></div><p style="font-size:22px;">pytesseract — Python wrapper</p></div>
+        <div style="display:flex; gap:10px; align-items:center;"><div style="width:6px; height:6px; border-radius:50%; background:var(--egat-gold);"></div><p style="font-size:22px;">Pillow — จัดการภาพ</p></div>
+        <div style="display:flex; gap:10px; align-items:center;"><div style="width:6px; height:6px; border-radius:50%; background:var(--egat-gold);"></div><p style="font-size:22px;">openpyxl — สร้าง Excel</p></div>
+      </div>
+    </div>
+    <div class="card" style="display:flex; flex-direction:column; gap:14px;">
+      <p style="font-size:24px; font-weight:700; color:var(--egat-gold);">AI และ Frontend</p>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div style="display:flex; gap:10px; align-items:center;"><div style="width:6px; height:6px; border-radius:50%; background:var(--egat-gold);"></div><p style="font-size:22px;">Ollama — Local AI Runtime</p></div>
+        <div style="display:flex; gap:10px; align-items:center;"><div style="width:6px; height:6px; border-radius:50%; background:var(--egat-gold);"></div><p style="font-size:22px;">Gemma 4 26B — Local Model</p></div>
+        <div style="display:flex; gap:10px; align-items:center;"><div style="width:6px; height:6px; border-radius:50%; background:var(--egat-gold);"></div><p style="font-size:22px;">Gemini API / OpenAI API</p></div>
+        <div style="display:flex; gap:10px; align-items:center;"><div style="width:6px; height:6px; border-radius:50%; background:var(--egat-gold);"></div><p style="font-size:22px;">HTML + CSS + Vanilla JS</p></div>
+        <div style="display:flex; gap:10px; align-items:center;"><div style="width:6px; height:6px; border-radius:50%; background:var(--egat-gold);"></div><p style="font-size:22px;">PyInstaller — รวมไฟล์เป็น EXE</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="padding:20px 28px; display:flex; align-items:center; gap:16px; background:rgba(212,168,67,0.12); border-color:rgba(212,168,67,0.25);">
+    <span style="font-size:26px;">🐍</span>
+    <p style="font-size:23px; opacity:0.9;">ทั้งระบบพัฒนาด้วย <strong>Python</strong> เพียงภาษาเดียว (ยกเว้น Frontend ที่ใช้ HTML/CSS/JS) สามารถรวมเป็นไฟล์ EXE เดียวสำหรับแจกจ่ายได้ทันที</p>
+  </div>
+  <div class="footer-bar"></div>
+  <span class="slide-num">14 / 16</span>
+</section>
+
+<!-- SLIDE 15: Summary -->
+<section class="slide-gold-accent" data-screen-label="15 สรุป" style="display: flex; flex-direction: column; justify-content: center; padding: 80px 100px; gap: 40px; position: relative; color: #fff">
+  <div style="position:absolute; top:0; right:0; width:480px; height:480px; background: radial-gradient(circle at 80% 20%, rgba(212,168,67,0.15) 0%, transparent 70%);"></div>
+  <div style="position:relative; z-index:1;">
+    <h2 style="font-size:52px;">สรุปและข้อเสนอแนะ</h2>
+    <div class="divider-gold" style="margin-top:20px;"></div>
+  </div>
+  <div class="grid-2" style="position:relative; z-index:1;">
+    <div style="display:flex; flex-direction:column; gap:20px;">
+      <h3 style="font-size:30px; color:var(--egat-gold-light);">สิ่งที่ระบบทำได้</h3>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div style="display:flex; gap:10px; align-items:center;"><span style="color:var(--egat-gold);">✓</span><p style="font-size:24px;">ตรวจสอบเอกสาร PDF อัตโนมัติด้วย AI</p></div>
+        <div style="display:flex; gap:10px; align-items:center;"><span style="color:var(--egat-gold);">✓</span><p style="font-size:24px;">รองรับทั้งเอกสารดิจิทัลและภาพสแกน</p></div>
+        <div style="display:flex; gap:10px; align-items:center;"><span style="color:var(--egat-gold);">✓</span><p style="font-size:24px;">เลือก AI ได้ตามความเหมาะสมของเอกสาร</p></div>
+        <div style="display:flex; gap:10px; align-items:center;"><span style="color:var(--egat-gold);">✓</span><p style="font-size:24px;">แสดงผลทันทีพร้อมคะแนนและหลักฐาน</p></div>
+        <div style="display:flex; gap:10px; align-items:center;"><span style="color:var(--egat-gold);">✓</span><p style="font-size:24px;">ส่งออกรายงาน Excel ได้ทันที</p></div>
+        <div style="display:flex; gap:10px; align-items:center;"><span style="color:var(--egat-gold);">✓</span><p style="font-size:24px;">ติดตั้งง่าย ใช้ EXE ไฟล์เดียว</p></div>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:20px;">
+      <h3 style="font-size:30px; color:var(--egat-gold-light);">แนวทางพัฒนาต่อยอด</h3>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div style="display:flex; gap:10px; align-items:center;"><span style="color:rgba(255,255,255,0.5);">→</span><p style="font-size:24px;">รองรับการตรวจสอบหลายไฟล์พร้อมกัน</p></div>
+        <div style="display:flex; gap:10px; align-items:center;"><span style="color:rgba(255,255,255,0.5);">→</span><p style="font-size:24px;">เพิ่มระบบจัดเก็บประวัติการตรวจสอบ</p></div>
+        <div style="display:flex; gap:10px; align-items:center;"><span style="color:rgba(255,255,255,0.5);">→</span><p style="font-size:24px;">พัฒนาเป็นระบบบนเว็บกลางขององค์กร</p></div>
+        <div style="display:flex; gap:10px; align-items:center;"><span style="color:rgba(255,255,255,0.5);">→</span><p style="font-size:24px;">เพิ่มการเปรียบเทียบผลระหว่างโมเดล AI</p></div>
+        <div style="display:flex; gap:10px; align-items:center;"><span style="color:rgba(255,255,255,0.5);">→</span><p style="font-size:24px;">รองรับไฟล์ประเภทอื่น เช่น Word, PowerPoint</p></div>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:auto; text-align:center; position:relative; z-index:1;">
+    <p style="font-size:28px; opacity:0.6;">EGAT — Risk File Checker</p>
+  </div>
+  <div class="footer-bar"></div>
+  <span class="slide-num">15 / 16</span>
+</section>
+
+<!-- SLIDE 16: จัดทำโดย -->
+<section class="slide-dark" data-screen-label="16 จัดทำโดย" style="display:flex; flex-direction:column; justify-content:center; align-items:center; padding: 80px 100px; gap:48px; position:relative;">
+  <div style="text-align:center;">
+    <span class="tag tag-gold">จัดทำโดย</span>
+  </div>
+  <div style="width:100%; max-width:1400px;">
+    <div class="card" style="text-align:center; display:flex; flex-direction:column; align-items:center; gap:16px; padding:40px 32px;">
+      <div>
+        <p style="font-size:28px; font-weight:700;">นายศิลาชัย เกษตรกุลชีพ</p>
+        <p style="font-size:24px; opacity:0.6; margin-top:8px;">นักศึกษาฝึกงาน</p>
+        <p style="font-size:22px; opacity:0.4; margin-top:4px;">แผนก หวข-ฟ กอง กวป-ฟ ฝ่ายบริหารจัดการสินทรัพย์ผลิตไฟฟ้า</p>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bar"></div>
+  <span class="slide-num">16 / 16</span>
+</section>
+
+</deck-stage>
+</body>
+</html>
