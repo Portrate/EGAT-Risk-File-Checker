@@ -116,6 +116,26 @@ async def export_excel(payload: dict):
     )
 
 
+@app.get("/ollama/status")
+async def ollama_status():
+    installed: list[str] = []
+    reachable = False
+    try:
+        async with httpx.AsyncClient(timeout=OLLAMA_CHECK_TIMEOUT) as client:
+            r = await client.get(OLLAMA_TAGS_URL)
+            if r.status_code == 200:
+                reachable = True
+                installed = [m["name"] for m in r.json().get("models", [])]
+    except Exception:
+        pass
+    local_models = [m for m in LOCAL_MODELS if m["value"] in installed]
+    return {
+        "reachable": reachable,
+        "installed_models": installed,
+        "local_models": local_models,
+    }
+
+
 @app.get("/health")
 async def health():
     # Ask Ollama if it is running; a 200 reply means it is ready

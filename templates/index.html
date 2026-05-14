@@ -136,6 +136,15 @@
                         <p class="upload-note">รองรับเฉพาะไฟล์ .pdf เท่านั้น</p>
                     </div>
 
+                    <!-- Ollama Status -->
+                    <div id="ollama-status-bar" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border-radius: 10px; background: var(--color-surface-container); font-size: 0.8125rem;">
+                        <span id="ollama-status-dot" style="width: 8px; height: 8px; border-radius: 50%; background: var(--color-outline); flex-shrink: 0;"></span>
+                        <span id="ollama-status-text" style="flex: 1; color: var(--color-on-surface-variant);">กำลังตรวจสอบ Ollama...</span>
+                        <button id="ollama-refresh-btn" type="button" title="ตรวจสอบ Ollama อีกครั้ง" style="display: flex; align-items: center; padding: 0; background: transparent; border: none; color: var(--color-on-surface-variant); cursor: pointer; opacity: 0.7;" onclick="checkOllamaStatus()">
+                            <span class="material-symbols-outlined" style="font-size: 1rem;">refresh</span>
+                        </button>
+                    </div>
+
                     <!-- Verification Action -->
                     <div style="display: flex; flex-direction: column; gap: 0.5rem; width: 100%;">
                         <div style="display: flex; gap: 0.5rem;">
@@ -235,7 +244,7 @@
         </div>
     </div>
 
-    <script defer src="/static/js/main.js?v=7"></script>
+    <script defer src="/static/js/main.js?v=8"></script>
 </body>
 
 </html>

@@ -865,11 +865,77 @@ function initAddModelDialog() {
     });
 }
 
+async function checkOllamaStatus() {
+    const dot = document.getElementById('ollama-status-dot');
+    const text = document.getElementById('ollama-status-text');
+    const refreshBtn = document.getElementById('ollama-refresh-btn');
+    const refreshIcon = refreshBtn ? refreshBtn.querySelector('.material-symbols-outlined') : null;
+
+    if (refreshIcon) refreshIcon.classList.add('spinning');
+    if (text) text.textContent = 'กำลังตรวจสอบ Ollama...';
+
+    try {
+        const res = await fetch('/ollama/status');
+        const data = await res.json();
+
+        if (data.reachable) {
+            const modelNames = data.local_models.map(m => m.label).join(', ');
+            if (dot) { dot.style.background = '#22c55e'; }
+            if (text) {
+                text.style.color = '';
+                text.textContent = modelNames
+                    ? `Ollama พร้อมใช้งาน — ${modelNames}`
+                    : 'Ollama พร้อมใช้งาน (ไม่พบโมเดล Local ที่ตั้งค่าไว้)';
+            }
+            refreshLocalModelGroup(data.local_models);
+        } else {
+            if (dot) { dot.style.background = '#ef4444'; }
+            if (text) {
+                text.style.color = 'var(--color-error)';
+                text.textContent = 'Ollama ไม่พร้อมใช้งาน — รัน ollama serve แล้วลองใหม่';
+            }
+            refreshLocalModelGroup([]);
+        }
+    } catch {
+        if (dot) { dot.style.background = '#ef4444'; }
+        if (text) {
+            text.style.color = 'var(--color-error)';
+            text.textContent = 'ไม่สามารถตรวจสอบสถานะ Ollama ได้';
+        }
+    } finally {
+        if (refreshIcon) refreshIcon.classList.remove('spinning');
+    }
+}
+
+function refreshLocalModelGroup(localModels) {
+    const modelSelect = document.getElementById('model-select');
+    if (!modelSelect) return;
+
+    const existingGroup = modelSelect.querySelector('optgroup[data-local="1"]');
+    if (existingGroup) existingGroup.remove();
+
+    if (localModels.length === 0) return;
+
+    const group = document.createElement('optgroup');
+    group.label = 'Local (Offline)';
+    group.dataset.local = '1';
+    for (const m of localModels) {
+        const opt = document.createElement('option');
+        opt.value = m.value;
+        opt.textContent = m.label;
+        group.appendChild(opt);
+    }
+    modelSelect.insertBefore(group, modelSelect.firstChild);
+    modelSelect.value = localModels[0].value;
+    modelSelect.dispatchEvent(new Event('change'));
+}
+
 // Start everything when the page loads
 initUpload();
 initChecklist();
 initModelSelect();
 initAddModelDialog();
 initPresets();
+checkOllamaStatus();
 document.getElementById('verify-btn').addEventListener('click', runVerification);
 document.getElementById('export-btn').addEventListener('click', exportToExcel);
