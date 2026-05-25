@@ -19,7 +19,7 @@ from config import HOST, PORT, DEFAULT_MODEL, OLLAMA_TAGS_URL, OLLAMA_CHECK_TIME
 
 def print_banner():
     print("=" * 50)
-    print("  Risk File Checker")
+    print("  File Checker")
     print("  ระบบตรวจสอบเอกสาร PDF ด้วย AI")
     print("=" * 50)
     print()
