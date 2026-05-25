@@ -1,4 +1,4 @@
-# Entry point for the Risk File Checker executable.
+# Entry point for the File Checker executable.
 
 import os
 import shutil

@@ -1,9 +1,9 @@
 @echo off
 chcp 65001 >nul
-title Build - Risk File Checker
+title Build - File Checker
 
 echo ========================================
-echo   Building Risk File Checker EXE
+echo   Building File Checker EXE
 echo ========================================
 echo.
 
@@ -25,7 +25,7 @@ echo [2/3] Running PyInstaller...
 pyinstaller ^
     --onefile ^
     --console ^
-    --name "RiskFileChecker" ^
+    --name "FileChecker" ^
     --add-data "static;static" ^
     --add-data "templates;templates" ^
     --hidden-import uvicorn.logging ^
@@ -62,7 +62,7 @@ echo.
 echo [3/3] Done!
 echo.
 echo ========================================
-echo   Output: dist\RiskFileChecker.exe
+echo   Output: dist\FileChecker.exe
 echo ========================================
 echo.
 pause

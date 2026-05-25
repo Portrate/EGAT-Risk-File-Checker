@@ -1,9 +1,9 @@
 @echo off
 chcp 65001 >nul
-title Risk File Checker
+title File Checker
 
 echo ========================================
-echo   Risk File Checker - Setup ^& Start
+echo   File Checker - Setup ^& Start
 echo ========================================
 echo.
 
