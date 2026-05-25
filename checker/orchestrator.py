@@ -12,7 +12,14 @@ from config import (
     CHUNK_SIZE,
     CHUNK_OVERLAP,
     MAX_RETRIES,
+    EGAT_GATEWAY_BASE_URL,
 )
+
+
+def _is_egat_gateway_model(model: str) -> bool:
+    # EGAT-issued model IDs carry a routing suffix (per the EGAT AI Gateway guide)
+    m = model.upper()
+    return "-GW-POC" in m or "-EGAT-GATEWAY" in m
 
 # JSON format string embedded in every prompt so the LLM knows the expected output shape
 _JSON_FORMAT_EXAMPLE = """{
@@ -359,9 +366,10 @@ async def _check_chunk_openai(
     requirement: str,
     model: str,
     api_key: str,
+    base_url: str = "https://api.openai.com/v1",
 ) -> dict:
     prompt = _build_single_prompt(chunk, section_title, requirement)
-    url = "https://api.openai.com/v1/chat/completions"
+    url = f"{base_url.rstrip('/')}/chat/completions"
     # gpt-4o-mini and newer models support structured outputs (json_schema);
     # older models only support json_object — use json_schema for gpt-4o / gpt-5 and above.
     use_structured = any(model.startswith(p) for p in ("gpt-4o", "gpt-5", "o1", "o3"))
@@ -442,6 +450,8 @@ async def _check_chunk(
     model: str = MODEL,
     api_key: str = "",
 ) -> dict:
+    if _is_egat_gateway_model(model):
+        return await _check_chunk_openai(client, chunk, section_title, requirement, model, api_key, base_url=EGAT_GATEWAY_BASE_URL)
     if model.startswith("gemini"):
         return await _check_chunk_gemini(client, chunk, section_title, requirement, model, api_key)
     if model.startswith(("gpt", "o1", "o3")):

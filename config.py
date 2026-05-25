@@ -5,6 +5,9 @@ HOST = "127.0.0.1"
 PORT = 8000
 BROWSER_OPEN_DELAY = 2.0
 
+# --- EGAT AI Gateway (OpenAI-compatible) ---
+EGAT_GATEWAY_BASE_URL = "https://aigateway.egat.co.th/v1"
+
 # --- Ollama ---
 OLLAMA_BASE_URL = "http://localhost:11434"
 OLLAMA_GENERATE_URL = f"{OLLAMA_BASE_URL}/api/generate"

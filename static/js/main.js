@@ -555,7 +555,7 @@ async function runVerification() {
         const selectedModel = modelSelect ? modelSelect.value : '';
         if (selectedModel) form.append('model', selectedModel);
 
-        const isCloud = selectedModel.startsWith('gemini') || selectedModel.startsWith('gpt');
+        const isCloud = isCloudModel(selectedModel);
         if (isCloud) {
             const apiKey = apiKeyInput ? apiKeyInput.value.trim() : '';
             if (!apiKey) { setLoading(false); stopTimer(); showError('กรุณากรอก API Key สำหรับโมเดลที่เลือก'); return; }
@@ -598,8 +598,7 @@ function initModelSelect() {
 
     function updateApiKeyVisibility() {
         const val = modelSelect.value;
-        const isCloud = val.startsWith('gemini') || val.startsWith('gpt');
-        apiKeyRow.style.display = isCloud ? 'block' : 'none';
+        apiKeyRow.style.display = isCloudModel(val) ? 'block' : 'none';
     }
 
     function updateDeleteButtonVisibility() {
@@ -761,7 +760,17 @@ function initPresets() {
     });
 }
 
-// Custom models stored as [{ provider: 'openai'|'gemini', value, label }]
+function isEgatGatewayModel(value) {
+    const v = (value || '').toUpperCase();
+    return v.includes('-GW-POC') || v.includes('-EGAT-GATEWAY');
+}
+
+function isCloudModel(value) {
+    if (!value) return false;
+    return isEgatGatewayModel(value) || value.startsWith('gemini') || value.startsWith('gpt');
+}
+
+// Custom models stored as [{ provider: 'openai'|'gemini'|'egat', value, label }]
 const CUSTOM_MODELS_KEY = 'customModels';
 
 function readCustomModels() {
@@ -786,6 +795,7 @@ function loadCustomModels() {
 
     const openaiGroup = document.getElementById('openai-group');
     const geminiGroup = document.getElementById('gemini-group');
+    const egatGroup = document.getElementById('egat-group');
     const customs = readCustomModels();
 
     for (const m of customs) {
@@ -793,7 +803,10 @@ function loadCustomModels() {
         opt.value = m.value;
         opt.textContent = `${m.label || m.value} (เพิ่มเอง)`;
         opt.dataset.custom = '1';
-        const target = m.provider === 'gemini' ? geminiGroup : openaiGroup;
+        let target;
+        if (m.provider === 'egat') target = egatGroup;
+        else if (m.provider === 'gemini') target = geminiGroup;
+        else target = openaiGroup;
         if (target) target.appendChild(opt);
     }
 }
@@ -839,14 +852,23 @@ function initAddModelDialog() {
         const prov = provider.value;
         if (!value) { showError('กรุณากรอกชื่อโมเดล'); return; }
 
-        // Backend routes by prefix: gpt-* → OpenAI, gemini* → Gemini.
-        // Enforce a matching prefix so the request goes to the right provider.
+        // Backend routes by name: *-GW-POC* / *-EGAT-GATEWAY → EGAT Gateway,
+        // else gpt-* → OpenAI, gemini* → Gemini. Enforce naming so the request
+        // reaches the correct provider.
         if (prov === 'openai' && !value.startsWith('gpt') && !value.startsWith('o1') && !value.startsWith('o3')) {
             showError('ชื่อโมเดล OpenAI ต้องขึ้นต้นด้วย gpt, o1 หรือ o3');
             return;
         }
         if (prov === 'gemini' && !value.startsWith('gemini')) {
             showError('ชื่อโมเดล Gemini ต้องขึ้นต้นด้วย gemini');
+            return;
+        }
+        if (prov === 'egat' && !isEgatGatewayModel(value)) {
+            showError('ชื่อโมเดล EGAT Gateway ต้องมี -GW-POC หรือ -EGAT-GATEWAY ในชื่อ');
+            return;
+        }
+        if (prov !== 'egat' && isEgatGatewayModel(value)) {
+            showError('ชื่อโมเดลนี้ดูเหมือนเป็น EGAT Gateway กรุณาเลือกผู้ให้บริการเป็น EGAT');
             return;
         }
 
