@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ประวัติการตรวจสอบ</title>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+
+    <link rel="stylesheet" href="/static/css/global.css" />
+    <link rel="stylesheet" href="/static/css/components/checklist.css" />
+    <link rel="stylesheet" href="/static/css/components/verification.css" />
+
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--color-surface-container-lowest);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        }
+        .history-table th, .history-table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--color-outline-variant);
+            font-size: 0.875rem;
+        }
+        .history-table th {
+            background: var(--color-surface-container);
+            font-weight: 700;
+            color: var(--color-on-surface);
+        }
+        .history-table tbody tr:hover { background: var(--color-surface-container); }
+        .history-table td.actions { white-space: nowrap; text-align: right; }
+        .btn-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.35rem 0.65rem;
+            border: 1px solid var(--color-outline-variant);
+            border-radius: 8px;
+            background: transparent;
+            color: var(--color-on-surface);
+            font-size: 0.8125rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            margin-left: 0.25rem;
+        }
+        .btn-link:hover { background: var(--color-surface-container-highest); }
+        .btn-link.danger { color: var(--color-error, #b00020); border-color: var(--color-error, #b00020); }
+        .pct {
+            display: inline-block;
+            padding: 0.15rem 0.55rem;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 0.8125rem;
+        }
+        .pct.good { background: #E6F4EA; color: #137333; }
+        .pct.mid  { background: #FEF7E0; color: #B26A00; }
+        .pct.bad  { background: #FCE8E6; color: #C5221F; }
+        .empty {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--color-on-surface-variant);
+        }
+        .detail-dialog {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 1000;
+            align-items: center; justify-content: center;
+            padding: 1rem;
+        }
+        .detail-dialog .dialog-body {
+            background: var(--color-surface, #fff);
+            border-radius: 12px;
+            padding: 1.25rem 1.5rem;
+            width: 100%;
+            max-width: 880px;
+            max-height: 85vh;
+            overflow: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .detail-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.5rem 1rem; font-size: 0.875rem; color: var(--color-on-surface-variant); margin-bottom: 1rem; }
+        .detail-meta strong { color: var(--color-on-surface); font-weight: 700; display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+        .result-section { margin-top: 1rem; }
+        .result-section h4 { margin: 0 0 0.5rem 0; font-size: 0.95rem; }
+        .result-item-mini {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 0.6rem 0.75rem;
+            border-radius: 8px;
+            margin-bottom: 0.35rem;
+            font-size: 0.8125rem;
+        }
+        .result-item-mini.pass { background: #E6F4EA; }
+        .result-item-mini.fail { background: #FCE8E6; }
+        .badge-pass { color: #137333; font-weight: 700; }
+        .badge-fail { color: #C5221F; font-weight: 700; }
+    </style>
+</head>
+
+<body>
+    <main class="app-container">
+        <div class="max-w-6xl">
+            <div class="header-section" style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h2 style="margin-bottom: 0.5rem;">ประวัติการตรวจสอบ</h2>
+                    <p class="text-on-surface-variant text-md">รายการผลตรวจสอบที่ผ่านมา สามารถดูรายละเอียดและส่งออก Excel ได้</p>
+                </div>
+                <a href="/" class="btn-link">
+                    <span class="material-symbols-outlined" style="font-size: 1rem;">arrow_back</span>
+                    กลับหน้าตรวจสอบ
+                </a>
+            </div>
+
+            <div id="history-container" style="margin-top: 1rem;">
+                <div class="empty">กำลังโหลด...</div>
+            </div>
+        </div>
+    </main>
+
+    <div id="detail-dialog" class="detail-dialog">
+        <div class="dialog-body">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <h3 style="margin: 0;">รายละเอียดผลตรวจสอบ</h3>
+                <button id="detail-close" class="btn-link" type="button">
+                    <span class="material-symbols-outlined" style="font-size: 1rem;">close</span>
+                    ปิด
+                </button>
+            </div>
+            <div id="detail-content"></div>
+        </div>
+    </div>
+
+    <script>
+        function escapeHtml(t) {
+            return String(t ?? '')
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function formatDate(iso) {
+            if (!iso) return '—';
+            const d = new Date(iso);
+            if (isNaN(d.getTime())) return iso;
+            const pad = n => String(n).padStart(2, '0');
+            return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+
+        function pctClass(p) {
+            if (p >= 80) return 'good';
+            if (p >= 50) return 'mid';
+            return 'bad';
+        }
+
+        async function loadHistory() {
+            const container = document.getElementById('history-container');
+            try {
+                const res = await fetch('/history/list');
+                if (!res.ok) throw new Error('โหลดประวัติไม่สำเร็จ');
+                const data = await res.json();
+                if (!data.length) {
+                    container.innerHTML = '<div class="empty">ยังไม่มีประวัติการตรวจสอบ</div>';
+                    return;
+                }
+                const rows = data.map(item => `
+                    <tr data-id="${item.id}">
+                        <td>${formatDate(item.created_at)}</td>
+                        <td style="max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(item.filename)}">${escapeHtml(item.filename)}</td>
+                        <td>${escapeHtml(item.model)}</td>
+                        <td style="text-align: center;">${item.passed} / ${item.total}</td>
+                        <td style="text-align: center;">${item.passed_score} / ${item.total_score}</td>
+                        <td style="text-align: center;"><span class="pct ${pctClass(item.similarity_score)}">${item.similarity_score}%</span></td>
+                        <td class="actions">
+                            <button class="btn-link" type="button" data-action="view" data-id="${item.id}">
+                                <span class="material-symbols-outlined" style="font-size: 1rem;">visibility</span>
+                                ดู
+                            </button>
+                            <a class="btn-link" href="/history/${item.id}/excel">
+                                <span class="material-symbols-outlined" style="font-size: 1rem;">download</span>
+                                Excel
+                            </a>
+                            <button class="btn-link danger" type="button" data-action="delete" data-id="${item.id}">
+                                <span class="material-symbols-outlined" style="font-size: 1rem;">delete</span>
+                                ลบ
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+                container.innerHTML = `
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>วันที่</th>
+                                <th>ชื่อไฟล์</th>
+                                <th>โมเดล</th>
+                                <th style="text-align: center;">ผ่าน/ทั้งหมด</th>
+                                <th style="text-align: center;">คะแนน</th>
+                                <th style="text-align: center;">%</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                `;
+
+                container.querySelectorAll('button[data-action="view"]').forEach(b => {
+                    b.addEventListener('click', () => viewDetail(b.dataset.id));
+                });
+                container.querySelectorAll('button[data-action="delete"]').forEach(b => {
+                    b.addEventListener('click', () => deleteItem(b.dataset.id));
+                });
+            } catch (err) {
+                container.innerHTML = `<div class="empty">${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        async function viewDetail(id) {
+            const dialog = document.getElementById('detail-dialog');
+            const content = document.getElementById('detail-content');
+            content.innerHTML = '<div class="empty">กำลังโหลด...</div>';
+            dialog.style.display = 'flex';
+
+            try {
+                const res = await fetch(`/history/${id}`);
+                if (!res.ok) throw new Error('โหลดรายละเอียดไม่สำเร็จ');
+                const item = await res.json();
+
+                const sectionsHtml = (item.results || []).map(s => `
+                    <div class="result-section">
+                        <h4>${escapeHtml(s.section || '—')}</h4>
+                        ${(s.items || []).map(it => {
+                            const isPass = it.status === 'pass';
+                            return `
+                                <div class="result-item-mini ${isPass ? 'pass' : 'fail'}">
+                                    <div style="flex: 1;">
+                                        <div style="font-weight: 600; margin-bottom: 0.2rem;">${escapeHtml(it.requirement || '')}</div>
+                                        <div style="color: var(--color-on-surface-variant); font-size: 0.75rem;">${escapeHtml(isPass ? (it.evidence || it.reasoning || '') : (it.reasoning || ''))}</div>
+                                    </div>
+                                    <div style="text-align: right; min-width: 90px;">
+                                        <div class="${isPass ? 'badge-pass' : 'badge-fail'}">${isPass ? 'FOUND' : 'MISSING'}</div>
+                                        <div style="font-size: 0.75rem; font-weight: 700;">${isPass ? '+' + (it.score ?? 0) : 0} คะแนน</div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `).join('');
+
+                content.innerHTML = `
+                    <div class="detail-meta">
+                        <div><strong>วันที่</strong>${formatDate(item.created_at)}</div>
+                        <div><strong>ชื่อไฟล์</strong>${escapeHtml(item.filename)}</div>
+                        <div><strong>โมเดล</strong>${escapeHtml(item.model)}</div>
+                        <div><strong>ผ่าน</strong>${item.passed} / ${item.total}</div>
+                        <div><strong>คะแนน</strong>${item.passed_score} / ${item.total_score}</div>
+                        <div><strong>เปอร์เซ็นต์</strong><span class="pct ${pctClass(item.similarity_score)}">${item.similarity_score}%</span></div>
+                    </div>
+                    <div style="margin-bottom: 0.75rem;">
+                        <a class="btn-link" href="/history/${item.id}/excel">
+                            <span class="material-symbols-outlined" style="font-size: 1rem;">download</span>
+                            ส่งออก Excel
+                        </a>
+                    </div>
+                    ${sectionsHtml || '<div class="empty">ไม่มีรายการ</div>'}
+                `;
+            } catch (err) {
+                content.innerHTML = `<div class="empty">${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        async function deleteItem(id) {
+            if (!window.confirm('ลบประวัติรายการนี้หรือไม่?')) return;
+            try {
+                const res = await fetch(`/history/${id}`, { method: 'DELETE' });
+                if (!res.ok) throw new Error('ลบไม่สำเร็จ');
+                loadHistory();
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        document.getElementById('detail-close').addEventListener('click', () => {
+            document.getElementById('detail-dialog').style.display = 'none';
+        });
+        document.getElementById('detail-dialog').addEventListener('click', (e) => {
+            if (e.target.id === 'detail-dialog') {
+                e.currentTarget.style.display = 'none';
+            }
+        });
+
+        loadHistory();
+    </script>
+</body>
+
+</html>

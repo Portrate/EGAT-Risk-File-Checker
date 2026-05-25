@@ -6,12 +6,19 @@ import httpx
 import pymupdf
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
 
 from checker.excel_exporter import build_excel_response
+from checker.history import (
+    delete_history,
+    get_history,
+    init_db,
+    list_history,
+    save_history,
+)
 from checker.models import ChecklistSection
 from checker.orchestrator import MODEL, analyze_with_llm_stream
 from checker.pdf_extractor import extract_text_from_bytes
@@ -29,6 +36,8 @@ app = FastAPI()
 
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
+
+init_db()
 
 
 @app.get("/")
@@ -71,10 +80,23 @@ async def analyze_stream(
 
     checklist_data = [{"title": s.title, "items": [{"name": i.name, "score": i.score} for i in s.items]} for s in sections]
     selected_model = model or MODEL
+    original_filename = file.filename or "document.pdf"
 
     async def event_stream():
         try:
             async for event in analyze_with_llm_stream(document_text, checklist_data, model=selected_model, api_key=api_key):
+                if event.get("type") == "done":
+                    try:
+                        hist_id = save_history(
+                            filename=original_filename,
+                            model=selected_model,
+                            summary=event.get("summary", {}),
+                            similarity_score=event.get("similarity_score", 0),
+                            results=event.get("results", []),
+                        )
+                        event = {**event, "history_id": hist_id}
+                    except Exception as exc:
+                        print(f"[WARN] Failed to save history: {exc}")
                 yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
         except httpx.ConnectError:
             err = {"type": "error", "detail": f"ไม่สามารถเชื่อมต่อ Ollama ได้ โปรดตรวจสอบว่า Ollama กำลังรันอยู่ที่ {OLLAMA_TAGS_URL}"}
@@ -134,6 +156,44 @@ async def ollama_status():
         "installed_models": installed,
         "local_models": local_models,
     }
+
+
+@app.get("/history")
+async def history_page(request: Request):
+    return templates.TemplateResponse(request, "history.html", {})
+
+
+@app.get("/history/list")
+async def history_list():
+    return list_history()
+
+
+@app.get("/history/{history_id}")
+async def history_detail(history_id: int):
+    item = get_history(history_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="ไม่พบประวัติการตรวจสอบ")
+    return item
+
+
+@app.get("/history/{history_id}/excel")
+async def history_export(history_id: int):
+    item = get_history(history_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="ไม่พบประวัติการตรวจสอบ")
+    return build_excel_response(
+        filename=item["filename"],
+        results_data=item["results"],
+        summary=item["summary"],
+        score=item["similarity_score"],
+    )
+
+
+@app.delete("/history/{history_id}")
+async def history_delete(history_id: int):
+    if not delete_history(history_id):
+        raise HTTPException(status_code=404, detail="ไม่พบประวัติการตรวจสอบ")
+    return JSONResponse({"ok": True})
 
 
 @app.get("/health")
