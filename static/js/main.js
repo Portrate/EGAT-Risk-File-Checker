@@ -562,6 +562,12 @@ async function runVerification() {
             form.append('api_key', apiKey);
         }
 
+        if (isEgatGatewayModel(selectedModel)) {
+            const egatUrlInput = document.getElementById('egat-gateway-url-input');
+            const egatUrl = egatUrlInput ? egatUrlInput.value.trim() : '';
+            if (egatUrl) form.append('egat_gateway_url', egatUrl);
+        }
+
         const res = await fetch('/analyze/stream', { method: 'POST', body: form });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
@@ -593,12 +599,16 @@ async function runVerification() {
 function initModelSelect() {
     const modelSelect = document.getElementById('model-select');
     const apiKeyRow = document.getElementById('api-key-row');
+    const egatGatewayUrlRow = document.getElementById('egat-gateway-url-row');
     const deleteBtn = document.getElementById('delete-model-btn');
     if (!modelSelect || !apiKeyRow) return;
 
     function updateApiKeyVisibility() {
         const val = modelSelect.value;
         apiKeyRow.style.display = isCloudModel(val) ? 'block' : 'none';
+        if (egatGatewayUrlRow) {
+            egatGatewayUrlRow.style.display = isEgatGatewayModel(val) ? 'block' : 'none';
+        }
     }
 
     function updateDeleteButtonVisibility() {

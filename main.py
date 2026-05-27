@@ -60,6 +60,7 @@ async def analyze_stream(
     checklist: str = Form(...),
     model: str = Form(default=""),
     api_key: str = Form(default=""),
+    egat_gateway_url: str = Form(default=""),
 ):
     # Validate inputs up-front so errors come back as proper HTTP responses, not as SSE error events
     pdf_bytes = await file.read()
@@ -84,7 +85,7 @@ async def analyze_stream(
 
     async def event_stream():
         try:
-            async for event in analyze_with_llm_stream(document_text, checklist_data, model=selected_model, api_key=api_key):
+            async for event in analyze_with_llm_stream(document_text, checklist_data, model=selected_model, api_key=api_key, egat_gateway_url=egat_gateway_url):
                 if event.get("type") == "done":
                     try:
                         hist_id = save_history(

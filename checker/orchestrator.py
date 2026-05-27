@@ -113,7 +113,7 @@ def _split_chunks(text: str) -> list[str]:
     return chunks
 
 
-async def analyze_with_llm_stream(document_text: str, checklist: list[dict], model: str = MODEL, api_key: str = ""):
+async def analyze_with_llm_stream(document_text: str, checklist: list[dict], model: str = MODEL, api_key: str = "", egat_gateway_url: str = ""):
     # Same as analyze_with_llm, but yields one event per checklist item as it completes,
     # plus a final "done" event with the full aggregated result.
     print(f"[DEBUG] (stream) Model: {model} | Checklist received: {json.dumps(checklist, ensure_ascii=False)}")
@@ -130,7 +130,7 @@ async def analyze_with_llm_stream(document_text: str, checklist: list[dict], mod
             for req_item in section.get("items", []):
                 requirement = req_item.get("name", "")
                 score = req_item.get("score", 0.0)
-                check = await _check_single_item(client, document_text, section_title, requirement, model=model, api_key=api_key)
+                check = await _check_single_item(client, document_text, section_title, requirement, model=model, api_key=api_key, egat_gateway_url=egat_gateway_url)
                 item_result = {
                     "requirement": requirement,
                     "score": score,
@@ -449,9 +449,10 @@ async def _check_chunk(
     requirement: str,
     model: str = MODEL,
     api_key: str = "",
+    egat_gateway_url: str = "",
 ) -> dict:
     if _is_egat_gateway_model(model):
-        return await _check_chunk_openai(client, chunk, section_title, requirement, model, api_key, base_url=EGAT_GATEWAY_BASE_URL)
+        return await _check_chunk_openai(client, chunk, section_title, requirement, model, api_key, base_url=egat_gateway_url or EGAT_GATEWAY_BASE_URL)
     if model.startswith("gemini"):
         return await _check_chunk_gemini(client, chunk, section_title, requirement, model, api_key)
     if model.startswith(("gpt", "o1", "o3")):
@@ -466,6 +467,7 @@ async def _check_single_item(
     requirement: str,
     model: str = MODEL,
     api_key: str = "",
+    egat_gateway_url: str = "",
 ) -> dict:
     # Check one checklist requirement across all document chunks
     # Return immediately on the first "pass" no need to read further chunks
@@ -473,7 +475,7 @@ async def _check_single_item(
     best = {"status": "fail", "reasoning": "", "evidence": None}
     try:
         for i, chunk in enumerate(chunks):
-            result = await _check_chunk(client, chunk, section_title, requirement, model=model, api_key=api_key)
+            result = await _check_chunk(client, chunk, section_title, requirement, model=model, api_key=api_key, egat_gateway_url=egat_gateway_url)
             status = result.get("status", "fail")
             print(f"[DEBUG] '{requirement[:40]}' chunk {i+1}/{len(chunks)} → {status}")
             if status == "pass":
