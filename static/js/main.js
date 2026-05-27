@@ -525,6 +525,7 @@ async function consumeStream(res) {
 
 // Check that a file and checklist exist, then send them to /analyze and show the results.
 async function runVerification() {
+    saveLlmSettings();
     const checklist = getChecklist();
     if (checklist.length === 0) { showError('กรุณาเพิ่มหัวข้อหลักและรายการย่อยอย่างน้อย 1 รายการ'); return; }
 
@@ -780,6 +781,47 @@ function isCloudModel(value) {
     return isEgatGatewayModel(value) || value.startsWith('gemini') || value.startsWith('gpt');
 }
 
+// LLM settings: model, api_key, egat_gateway_url — saved on every ตรวจสอบ click.
+const LLM_SETTINGS_KEY = 'llmSettings';
+
+function saveLlmSettings() {
+    try {
+        const model = document.getElementById('model-select')?.value || '';
+        const apiKey = document.getElementById('api-key-input')?.value || '';
+        const egatUrl = document.getElementById('egat-gateway-url-input')?.value || '';
+        localStorage.setItem(LLM_SETTINGS_KEY, JSON.stringify({ model, apiKey, egatUrl }));
+    } catch { /* quota exceeded or private browsing — silently ignore */ }
+}
+
+function loadLlmSettings() {
+    try {
+        const raw = localStorage.getItem(LLM_SETTINGS_KEY);
+        if (!raw) return;
+        const { model, apiKey, egatUrl } = JSON.parse(raw);
+
+        const modelSelect = document.getElementById('model-select');
+        if (model && modelSelect) {
+            // The option may be a built-in or a custom model added by loadCustomModels().
+            // Only restore if the value actually exists in the list.
+            const exists = Array.from(modelSelect.options).some(o => o.value === model);
+            if (exists) {
+                modelSelect.value = model;
+                modelSelect.dispatchEvent(new Event('change'));
+            }
+        }
+
+        if (apiKey) {
+            const apiKeyInput = document.getElementById('api-key-input');
+            if (apiKeyInput) apiKeyInput.value = apiKey;
+        }
+
+        if (egatUrl) {
+            const egatUrlInput = document.getElementById('egat-gateway-url-input');
+            if (egatUrlInput) egatUrlInput.value = egatUrl;
+        }
+    } catch { /* corrupted storage — ignore */ }
+}
+
 // Custom models stored as [{ provider: 'openai'|'gemini'|'egat', value, label }]
 const CUSTOM_MODELS_KEY = 'customModels';
 
@@ -966,6 +1008,7 @@ function refreshLocalModelGroup(localModels) {
 initUpload();
 initChecklist();
 initModelSelect();
+loadLlmSettings();
 initAddModelDialog();
 initPresets();
 checkOllamaStatus();
