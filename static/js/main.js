@@ -606,9 +606,9 @@ function initModelSelect() {
 
     function updateApiKeyVisibility() {
         const val = modelSelect.value;
-        apiKeyRow.style.display = isCloudModel(val) ? 'block' : 'none';
+        apiKeyRow.style.display = isCloudModel(val) ? 'flex' : 'none';
         if (egatGatewayUrlRow) {
-            egatGatewayUrlRow.style.display = isEgatGatewayModel(val) ? 'block' : 'none';
+            egatGatewayUrlRow.style.display = isEgatGatewayModel(val) ? 'flex' : 'none';
         }
     }
 
@@ -622,6 +622,7 @@ function initModelSelect() {
     modelSelect.addEventListener('change', () => {
         updateApiKeyVisibility();
         updateDeleteButtonVisibility();
+        restoreApiKeyForModel(modelSelect.value);
     });
 
     if (deleteBtn) {
@@ -781,28 +782,47 @@ function isCloudModel(value) {
     return isEgatGatewayModel(value) || value.startsWith('gemini') || value.startsWith('gpt');
 }
 
-// LLM settings: model, api_key, egat_gateway_url — saved on every ตรวจสอบ click.
+// LLM settings: last-used model, per-model API keys, EGAT gateway URL.
+// Saved on every ตรวจสอบ click; API key is stored individually per model value.
 const LLM_SETTINGS_KEY = 'llmSettings';
+
+function readLlmSettings() {
+    try {
+        const raw = localStorage.getItem(LLM_SETTINGS_KEY);
+        return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+}
 
 function saveLlmSettings() {
     try {
         const model = document.getElementById('model-select')?.value || '';
         const apiKey = document.getElementById('api-key-input')?.value || '';
         const egatUrl = document.getElementById('egat-gateway-url-input')?.value || '';
-        localStorage.setItem(LLM_SETTINGS_KEY, JSON.stringify({ model, apiKey, egatUrl }));
+
+        const saved = readLlmSettings();
+        const apiKeys = saved.apiKeys || {};
+        if (model && apiKey) apiKeys[model] = apiKey;   // store key under its own model
+        else if (model && !apiKey) delete apiKeys[model]; // cleared — remove entry
+
+        localStorage.setItem(LLM_SETTINGS_KEY, JSON.stringify({ model, apiKeys, egatUrl }));
     } catch { /* quota exceeded or private browsing — silently ignore */ }
+}
+
+// Fill the API key input with the saved key for the given model (empty string if none).
+function restoreApiKeyForModel(model) {
+    const apiKeyInput = document.getElementById('api-key-input');
+    if (!apiKeyInput) return;
+    const { apiKeys = {} } = readLlmSettings();
+    apiKeyInput.value = apiKeys[model] || '';
 }
 
 function loadLlmSettings() {
     try {
-        const raw = localStorage.getItem(LLM_SETTINGS_KEY);
-        if (!raw) return;
-        const { model, apiKey, egatUrl } = JSON.parse(raw);
+        const { model, apiKeys = {}, egatUrl } = readLlmSettings();
 
         const modelSelect = document.getElementById('model-select');
         if (model && modelSelect) {
-            // The option may be a built-in or a custom model added by loadCustomModels().
-            // Only restore if the value actually exists in the list.
+            // Only restore if the option still exists (guards against deleted custom models).
             const exists = Array.from(modelSelect.options).some(o => o.value === model);
             if (exists) {
                 modelSelect.value = model;
@@ -810,10 +830,10 @@ function loadLlmSettings() {
             }
         }
 
-        if (apiKey) {
-            const apiKeyInput = document.getElementById('api-key-input');
-            if (apiKeyInput) apiKeyInput.value = apiKey;
-        }
+        // Restore the API key for whichever model is now selected.
+        const activeModel = modelSelect?.value || model;
+        const apiKeyInput = document.getElementById('api-key-input');
+        if (apiKeyInput) apiKeyInput.value = apiKeys[activeModel] || '';
 
         if (egatUrl) {
             const egatUrlInput = document.getElementById('egat-gateway-url-input');
