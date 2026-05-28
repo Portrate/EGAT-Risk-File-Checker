@@ -369,35 +369,66 @@ p { margin: 0; line-height: 1.6; }
 </section>
 
 <!-- SLIDE 07: AI Analysis -->
-<section class="slide-white" data-screen-label="07 การวิเคราะห์ด้วย AI" style="display:flex; flex-direction:column; padding: 72px 100px; gap:32px; position:relative;">
+<section class="slide-white" data-screen-label="07 การวิเคราะห์ด้วย AI" style="display:flex; flex-direction:column; padding: 56px 80px; gap:20px; position:relative;">
   <div>
     <span class="tag tag-purple">ฟังก์ชันที่ 3</span>
-    <h2 style="font-size:48px; margin-top:20px; color:var(--egat-purple);">การวิเคราะห์ด้วย AI</h2>
+    <h2 style="font-size:42px; margin-top:14px; color:var(--egat-purple);">การวิเคราะห์ด้วย AI (Prompt จริงที่ใช้)</h2>
   </div>
-  <div style="display:flex; gap:32px; flex:1;">
-    <div style="flex:1; display:flex; flex-direction:column; gap:20px;">
-      <p style="font-size:25px; color:#555; line-height:1.7;">ระบบสร้างคำสั่ง (Prompt) ที่มีโครงสร้างชัดเจน ส่งให้ AI ตัดสินทีละรายการ โดยกำหนดเกณฑ์อย่างเข้มงวด</p>
-      <div class="card-white" style="flex:1; display:flex; flex-direction:column; gap:16px;">
-        <p style="font-size:22px; font-weight:700; color:var(--egat-purple);">สิ่งที่ส่งให้ AI ทุกครั้ง</p>
-        <div style="display:flex; gap:12px; align-items:center;"><div style="width:8px; height:8px; border-radius:50%; background:var(--egat-purple);"></div><p style="font-size:23px;">บทบาท "ผู้ตรวจสอบเอกสารที่เข้มงวด"</p></div>
-        <div style="display:flex; gap:12px; align-items:center;"><div style="width:8px; height:8px; border-radius:50%; background:var(--egat-purple);"></div><p style="font-size:23px;">ข้อกำหนดที่ต้องตรวจ (จาก Checklist)</p></div>
-        <div style="display:flex; gap:12px; align-items:center;"><div style="width:8px; height:8px; border-radius:50%; background:var(--egat-purple);"></div><p style="font-size:23px;">ข้อความจากเอกสาร (แต่ละชิ้น)</p></div>
-        <div style="display:flex; gap:12px; align-items:center;"><div style="width:8px; height:8px; border-radius:50%; background:var(--egat-purple);"></div><p style="font-size:23px;">เกณฑ์ตัดสิน 9 ข้อ ที่ต้องปฏิบัติอย่างเคร่งครัด</p></div>
-        <div style="display:flex; gap:12px; align-items:center;"><div style="width:8px; height:8px; border-radius:50%; background:var(--egat-purple);"></div><p style="font-size:23px;">รูปแบบคำตอบ JSON ที่กำหนดไว้ชัดเจน</p></div>
-      </div>
+  <div style="display:flex; gap:24px; flex:1; min-height:0;">
+    <!-- Left: actual prompt -->
+    <div style="flex:1.6; background:var(--egat-dark); border-radius:14px; padding:24px 28px; font-family:'Consolas','Courier New',monospace; font-size:16px; color:#D0D8E4; line-height:1.65; overflow:hidden;">
+      <p style="color:#888; font-size:13px; margin-bottom:10px;">checker/orchestrator.py · _build_single_prompt()</p>
+<pre style="margin:0; white-space:pre-wrap; font-family:inherit; font-size:inherit; color:inherit; line-height:inherit;"><span style="color:#FFD940;">คุณคือระบบตรวจสอบเอกสารที่เข้มงวด</span> หน้าที่ของคุณคือตรวจสอบว่าเอกสารมีเนื้อหา
+ครอบคลุมข้อกำหนดที่ระบุอย่างชัดเจนหรือไม่
+
+<span style="color:#81C784;">หัวข้อ:</span> {section_title}
+<span style="color:#81C784;">ข้อกำหนด:</span> {requirement}
+
+<span style="color:#FFD940;">เกณฑ์การตัดสิน (เข้มงวด):</span>
+- "<span style="color:#81C784;">pass</span>" = เอกสารมีเนื้อหาที่ระบุถึงข้อกำหนดนี้อย่างชัดเจนและเฉพาะเจาะจง
+   ต้องระบุ evidence เป็นข้อความจากเอกสารที่อ้างอิงได้
+- "<span style="color:#E57373;">fail</span>" = เอกสารไม่มีเนื้อหาที่กล่าวถึงข้อกำหนดนี้อย่างชัดเจน
+   หรือมีเพียงการกล่าวถึงแบบผ่านๆ โดยไม่มีสาระสำคัญ evidence ต้องเป็น null
+
+<span style="color:#FFD940;">หลักการ (ต้องปฏิบัติตามอย่างเคร่งครัด):</span>
+1. ต้องกล่าวถึงประเด็นในข้อกำหนดอย่างชัดเจนและตรงประเด็น
+2. หากกล่าวถึงหัวข้อกว้างๆ แต่ไม่มีรายละเอียดที่ต้องการ ให้ตอบ "fail"
+3. หากไม่มีข้อความที่พิสูจน์ได้โดยตรง ให้ตอบ "fail"
+4. <span style="color:#FFD940;">เมื่อสงสัย ให้เลือก "fail" เสมอ</span>
+5. evidence ต้องเป็นข้อความจากเอกสารโดยตรง ห้ามแต่งขึ้นเอง
+6. found_in_document = true เฉพาะเมื่อพบหลักฐานชัดเจน
+7. ห้ามใช้ภาษาอังกฤษในการอธิบาย ต้องตอบเป็นภาษาไทยเท่านั้น
+8. reasoning_in_thai ต้องสั้น 1-2 ประโยคเท่านั้น
+9. evidence ต้องสั้น ไม่เกิน 80 ตัวอักษร
+
+ตอบเป็น JSON เท่านั้น ตามรูปแบบนี้:
+{
+  "status": "<span style="color:#81C784;">pass</span> หรือ <span style="color:#E57373;">fail</span>",
+  "reasoning_in_thai": "1-2 ประโยคสั้นๆ เป็นภาษาไทยเท่านั้น",
+  "evidence": "ข้อความจากเอกสาร ไม่เกิน 80 ตัวอักษร หรือ null",
+  "found_in_document": <span style="color:#FFD940;">true</span>
+}
+
+<span style="color:#81C784;">DOCUMENT:</span>
+{document_text}</pre>
     </div>
-    <div style="width:440px; display:flex; flex-direction:column; gap:16px;">
-      <p style="font-size:22px; font-weight:700; color:var(--egat-purple);">AI ต้องตอบกลับเป็น JSON</p>
-      <div style="background:var(--egat-dark); border-radius:12px; padding:28px; font-family:monospace; font-size:21px; color:#D0D8E4; line-height:1.8;">
-        {<br/>
-        &nbsp;&nbsp;"status": "<span style="color:var(--egat-gold);">pass</span>" หรือ "<span style="color:#E57373;">fail</span>"<br/>
-        &nbsp;&nbsp;"reasoning": "<span style="color:#81C784;">เหตุผลเป็นภาษาไทย</span>"<br/>
-        &nbsp;&nbsp;"evidence": "<span style="color:#81C784;">ข้อความจากเอกสาร</span>"<br/>
-        &nbsp;&nbsp;"found_in_document": <span style="color:var(--egat-gold);">true/false</span><br/>
-        }
+    <!-- Right: annotations -->
+    <div style="width:340px; display:flex; flex-direction:column; gap:14px;">
+      <div class="card-white" style="padding:18px;">
+        <p style="font-size:19px; font-weight:700; color:var(--egat-purple);">🎭 กำหนดบทบาท</p>
+        <p style="font-size:17px; color:#555; margin-top:6px; line-height:1.6;">บอก AI ว่าเป็น "ผู้ตรวจสอบที่เข้มงวด" เพื่อปรับพฤติกรรมให้ระวังมากขึ้น</p>
       </div>
-      <div class="card-white" style="padding:20px;">
-        <p style="font-size:21px; color:#555;"><strong style="color:var(--egat-purple);">กลไกป้องกัน:</strong> หาก AI ตอบไม่ตรงรูปแบบ ระบบมี Regex fallback แยกแต่ละฟิลด์ออกมาได้ แม้ JSON จะถูกตัดกลางคัน</p>
+      <div class="card-white" style="padding:18px;">
+        <p style="font-size:19px; font-weight:700; color:var(--egat-purple);">⚖ นิยาม pass/fail ชัดเจน</p>
+        <p style="font-size:17px; color:#555; margin-top:6px; line-height:1.6;">กันการตีความเอง พร้อมระบุว่าเมื่อไหร่ต้องใส่ evidence</p>
+      </div>
+      <div class="card-white" style="padding:18px;">
+        <p style="font-size:19px; font-weight:700; color:var(--egat-purple);">🛡 หลัก 9 ข้อ ป้องกัน Hallucination</p>
+        <p style="font-size:17px; color:#555; margin-top:6px; line-height:1.6;">เน้นข้อ 4-5: เมื่อสงสัยให้ fail และห้ามแต่ง evidence เพื่อลด false positive</p>
+      </div>
+      <div class="card-white" style="padding:18px;">
+        <p style="font-size:19px; font-weight:700; color:var(--egat-purple);">📋 บังคับรูปแบบ JSON</p>
+        <p style="font-size:17px; color:#555; margin-top:6px; line-height:1.6;">มี Regex fallback แยกแต่ละฟิลด์ออกมาได้ แม้ JSON ถูกตัดกลางคัน</p>
       </div>
     </div>
   </div>
